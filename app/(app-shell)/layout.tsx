@@ -15,25 +15,20 @@ import {
 } from "@/lib/mock";
 import type { FeatureKey, MockPlan, MockRole } from "@/types";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  featureKey?: FeatureKey;
+};
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "[DB]" },
   { href: "/customer-service", label: "Customer Service", icon: "[CS]" },
-  {
-    href: "/workflow-builder",
-    label: "Workflow Builder",
-    icon: "[WF]",
-    featureKey: "workflowBuilder" as const,
-  },
-  { href: "/inventory", label: "Inventory", icon: "[IN]" },
-  { href: "/logistics", label: "Logistics", icon: "[LG]" },
-  { href: "/reports", label: "Reports", icon: "[RP]" },
+  { href: "/chatbot-config", label: "Chatbot Config", icon: "[CB]" },
   { href: "/integrations", label: "Integrations", icon: "[IG]" },
-  {
-    href: "/settings",
-    label: "Settings",
-    icon: "[ST]",
-    featureKey: "settingsAccess" as const,
-  },
+  { href: "/insights", label: "AI Insights", icon: "[AI]" },
+  { href: "/analytics", label: "Analytics", icon: "[AN]" },
 ];
 
 type SearchResult = {
@@ -233,7 +228,7 @@ export default function AppShellLayout({
           >
             Menu
           </button>
-          <div className="ml-3 text-sm text-gray-600">Admin Dashboard</div>
+          <div className="ml-3 text-sm text-gray-600">AccessPath MVP</div>
           <div className="ml-auto flex items-center gap-2">
             <button
               className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
