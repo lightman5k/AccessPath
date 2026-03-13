@@ -1,0 +1,88 @@
+import type { LogisticsKpi, LogisticsRoute } from "@/types";
+
+export const logisticsKpis: LogisticsKpi[] = [
+  {
+    label: "Active Routes",
+    value: "18",
+    helperText: "Currently monitored shipments",
+  },
+  {
+    label: "On-Time Rate",
+    value: "94%",
+    helperText: "Last 24 hours network-wide",
+  },
+  {
+    label: "Savings Estimate",
+    value: "$12.4K",
+    helperText: "Projected from current route plan",
+  },
+];
+
+export const logisticsRoutes: LogisticsRoute[] = [
+  {
+    id: "route-1001",
+    routeCode: "MW-CHI-DET",
+    origin: "Chicago",
+    destination: "Detroit",
+    region: "Midwest",
+    status: "On Time",
+    etaHours: 6,
+    loadUtilization: 82,
+    stops: 3,
+  },
+  {
+    id: "route-1002",
+    routeCode: "SO-DAL-HOU",
+    origin: "Dallas",
+    destination: "Houston",
+    region: "South",
+    status: "At Risk",
+    etaHours: 5,
+    loadUtilization: 91,
+    stops: 4,
+  },
+  {
+    id: "route-1003",
+    routeCode: "WE-PHX-LAX",
+    origin: "Phoenix",
+    destination: "Los Angeles",
+    region: "West",
+    status: "Delayed",
+    etaHours: 9,
+    loadUtilization: 76,
+    stops: 5,
+  },
+  {
+    id: "route-1004",
+    routeCode: "NE-NWK-BOS",
+    origin: "Newark",
+    destination: "Boston",
+    region: "Northeast",
+    status: "On Time",
+    etaHours: 7,
+    loadUtilization: 88,
+    stops: 3,
+  },
+  {
+    id: "route-1005",
+    routeCode: "SO-ATL-MIA",
+    origin: "Atlanta",
+    destination: "Miami",
+    region: "South",
+    status: "At Risk",
+    etaHours: 10,
+    loadUtilization: 94,
+    stops: 6,
+  },
+  {
+    id: "route-1006",
+    routeCode: "MW-MSP-CLE",
+    origin: "Minneapolis",
+    destination: "Cleveland",
+    region: "Midwest",
+    status: "On Time",
+    etaHours: 8,
+    loadUtilization: 79,
+    stops: 4,
+  },
+];

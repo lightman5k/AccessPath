@@ -1,0 +1,120 @@
+import type { InventoryAiAction, InventoryItem, InventoryKpi } from "@/types";
+
+export const inventoryKpis: InventoryKpi[] = [
+  {
+    label: "Total SKUs",
+    value: "248",
+    helperText: "Across all stocked locations",
+  },
+  {
+    label: "Units on Hand",
+    value: "18,420",
+    helperText: "Current warehouse count",
+  },
+  {
+    label: "At-Risk Items",
+    value: "14",
+    helperText: "Below reorder threshold",
+  },
+];
+
+export const inventoryItems: InventoryItem[] = [
+  {
+    id: "inv-1001",
+    sku: "ELEC-AX200",
+    name: "AX200 Router",
+    category: "Electronics",
+    location: "Chicago DC",
+    stock: 64,
+    reorderPoint: 24,
+    incomingUnits: 40,
+    status: "Healthy",
+  },
+  {
+    id: "inv-1002",
+    sku: "ELEC-CAM12",
+    name: "Indoor Camera",
+    category: "Electronics",
+    location: "Dallas DC",
+    stock: 12,
+    reorderPoint: 18,
+    incomingUnits: 25,
+    status: "Low Stock",
+  },
+  {
+    id: "inv-1003",
+    sku: "APP-TS400",
+    name: "Core Tee",
+    category: "Apparel",
+    location: "Chicago DC",
+    stock: 220,
+    reorderPoint: 60,
+    incomingUnits: 0,
+    status: "Healthy",
+  },
+  {
+    id: "inv-1004",
+    sku: "HOME-LMP9",
+    name: "Desk Lamp",
+    category: "Home Goods",
+    location: "Phoenix DC",
+    stock: 7,
+    reorderPoint: 15,
+    incomingUnits: 30,
+    status: "Critical",
+  },
+  {
+    id: "inv-1005",
+    sku: "OFF-CHR21",
+    name: "Ergo Chair",
+    category: "Office",
+    location: "Atlanta DC",
+    stock: 31,
+    reorderPoint: 20,
+    incomingUnits: 12,
+    status: "Healthy",
+  },
+  {
+    id: "inv-1006",
+    sku: "OFF-DSK11",
+    name: "Standing Desk",
+    category: "Office",
+    location: "Dallas DC",
+    stock: 9,
+    reorderPoint: 14,
+    incomingUnits: 16,
+    status: "Low Stock",
+  },
+  {
+    id: "inv-1007",
+    sku: "HOME-STOR8",
+    name: "Storage Bin Set",
+    category: "Home Goods",
+    location: "Atlanta DC",
+    stock: 4,
+    reorderPoint: 10,
+    incomingUnits: 8,
+    status: "Critical",
+  },
+];
+
+export const inventoryAiActions: InventoryAiAction[] = [
+  {
+    id: "ai-action-1",
+    title: "Create replenishment order",
+    description: "Prioritize low-stock SKUs for the Dallas and Phoenix locations.",
+    impact: "Reduces projected stockouts this week.",
+  },
+  {
+    id: "ai-action-2",
+    title: "Rebalance warehouse inventory",
+    description: "Move excess Chicago inventory to Dallas to cover demand spikes.",
+    impact: "Improves fulfillment coverage by 12%.",
+  },
+  {
+    id: "ai-action-3",
+    title: "Pause underperforming SKU",
+    description: "Temporarily suppress purchase orders for slow-moving office inventory.",
+    impact: "Avoids overstock carrying cost.",
+  },
+];
