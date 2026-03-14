@@ -15,3 +15,11 @@ export type DashboardInteraction = {
   status: ConversationStatus;
   updated: string;
 };
+
+export type DashboardAiRecommendation = {
+  id: string;
+  title: string;
+  description: string;
+  impact: "Low" | "Medium" | "High";
+  category: string;
+};

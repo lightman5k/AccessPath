@@ -1,4 +1,4 @@
-export { dashboardInteractions, dashboardKpis } from "./dashboard";
+export { dashboardAiRecommendations, dashboardInteractions, dashboardKpis } from "./dashboard";
 export {
   customerServiceConversationById,
   customerServiceConversations,

@@ -169,7 +169,9 @@ export default function AppShellLayout({
         <div className="mb-6 text-lg font-semibold">AccessPath Admin</div>
         <nav className="space-y-1">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(`${item.href}/`));
             const locked = item.featureKey ? !hasFeatureAccess(session, item.featureKey) : false;
             const featureKey = item.featureKey;
             return (

@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Badge, EmptyState, PageHeader, Table } from "@/components/ui";
+import { Badge, EmptyState, PageHeader, StatCard, Table } from "@/components/ui";
 import {
   customerServiceConversations,
   customerServiceKpis,
@@ -212,54 +212,100 @@ export default function CustomerServicePage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
-        title="Customer Service"
-        description="Track service queues, team responsiveness, and live conversations."
+        title="Customer Support Hub"
+        description="Manage support tickets, monitor team performance, and resolve customer inquiries efficiently."
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {customerServiceKpis.map((kpi) => (
-          <article
+          <StatCard
             key={kpi.label}
-            className="rounded-lg border border-gray-200 bg-white p-4"
-          >
-            <p className="text-sm text-gray-500">{kpi.label}</p>
-            <p className="mt-2 text-2xl font-semibold">{kpi.value}</p>
-            <p className="mt-1 text-sm text-gray-600">{kpi.note}</p>
-          </article>
+            label={kpi.label}
+            value={kpi.value}
+            helperText={kpi.note}
+          />
         ))}
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <section className="rounded-lg border border-gray-200 bg-white p-4 xl:col-span-1">
-          <h2 className="text-lg font-semibold">Queue</h2>
-          <ul className="mt-4 space-y-3">
+        <section className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-1">
+          <header className="mb-6">
+            <h2 className="text-lg font-semibold">Support Queue</h2>
+            <p className="mt-1 text-sm text-gray-600">Active conversations by priority</p>
+          </header>
+          <div className="space-y-4">
             {customerServiceQueueItems.map((item) => (
-              <li
+              <div
                 key={item.priority}
-                className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 p-3"
+                className="flex items-center justify-between rounded-lg border border-gray-100 bg-gradient-to-r from-gray-50 to-white p-4 transition-colors hover:from-gray-100 hover:to-gray-50"
               >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{item.priority}</p>
-                  <p className="text-xs text-gray-600">Target: {item.eta}</p>
+                <div className="flex items-center gap-3">
+                  <div className={`h-3 w-3 rounded-full ${
+                    item.priority === 'High' ? 'bg-red-500' :
+                    item.priority === 'Medium' ? 'bg-amber-500' : 'bg-green-500'
+                  }`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{item.priority} Priority</p>
+                    <p className="text-xs text-gray-600">Target: {item.eta}</p>
+                  </div>
                 </div>
-                <Badge variant={badgeMetaForPriority(item.priority).variant}>
+                <Badge
+                  variant={badgeMetaForPriority(item.priority).variant}
+                  className="text-sm font-semibold"
+                >
                   {item.count}
                 </Badge>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
+          <div className="mt-6 rounded-lg bg-blue-50 p-4">
+            <p className="text-sm text-blue-900">
+              <span className="font-medium">Total active:</span> {customerServiceQueueItems.reduce((sum, item) => sum + item.count, 0)} conversations
+            </p>
+          </div>
         </section>
 
-        <section className="rounded-lg border border-gray-200 bg-white p-4 xl:col-span-2">
-          <header className="mb-4 flex items-center justify-between">
+        <section className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
+          <header className="mb-6 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Conversations</h2>
             <p className="text-sm text-gray-500">
               {filteredConversations.length} result
               {filteredConversations.length === 1 ? "" : "s"}
             </p>
           </header>
+
+          <div className="mb-6 flex flex-wrap gap-3">
+            <button
+              className="flex items-center gap-2 rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              type="button"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              New Conversation
+            </button>
+            <button
+              className="flex items-center gap-2 rounded-md border border-green-300 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+              type="button"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Bulk Resolve
+            </button>
+            <button
+              className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+              type="button"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+              Reassign Queue
+            </button>
+          </div>
+
           <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
               {tabOptions.map((tab) => {

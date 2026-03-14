@@ -256,111 +256,162 @@ export function ConversationDetailClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Toast
         message={toastMessage}
         onClose={() => setToastOpen(false)}
         open={toastOpen}
       />
-      <section className="flex flex-wrap items-center justify-between gap-3">
+      <section className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-500">Conversation</p>
-          <h1 className="text-2xl font-semibold">{conversation.id}</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {conversation.customer} - {conversation.topic}
-          </p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/customer-service"
+              className="rounded-md border border-gray-300 p-2 text-gray-400 hover:bg-gray-50 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div>
+              <p className="text-sm text-gray-500">Support Ticket</p>
+              <h1 className="text-2xl font-semibold text-gray-900">{conversation.id}</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                {conversation.customer} • {conversation.topic}
+              </p>
+            </div>
+          </div>
         </div>
-        <Link
-          href="/customer-service"
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-        >
-          Back to conversations
-        </Link>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <Badge variant={badgeVariantForPriority(priority)}>
+              {priority} Priority
+            </Badge>
+            <Badge variant={badgeVariantForStatus(status)}>{status}</Badge>
+          </div>
+          <Link
+            href="/customer-service"
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+          >
+            Back to Support Hub
+          </Link>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="rounded-lg border border-gray-200 bg-white p-4 xl:col-span-2">
-          <h2 className="text-lg font-semibold">Transcript</h2>
-          <div className="mt-4 space-y-3">
+      <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <article className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
+          <header className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Conversation Transcript</h2>
+            <p className="mt-1 text-sm text-gray-600">Complete message history for this support ticket</p>
+          </header>
+          <div className="space-y-4">
             {conversation.transcript.map((message, idx) => (
               <div
                 key={`${message.time}-${idx}`}
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                  message.from === "Agent"
-                    ? "ml-auto bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-900"
+                className={`flex ${
+                  message.from === "Agent" ? "justify-end" : "justify-start"
                 }`}
               >
-                <p className="text-xs opacity-80">
-                  {message.from} - {message.time}
-                </p>
-                <p className="mt-1">{message.text}</p>
+                <div
+                  className={`max-w-[75%] rounded-lg px-4 py-3 ${
+                    message.from === "Agent"
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-900 border border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium ${
+                      message.from === "Agent" ? "text-blue-100" : "text-gray-500"
+                    }`}>
+                      {message.from}
+                    </span>
+                    <span className={`text-xs ${
+                      message.from === "Agent" ? "text-blue-200" : "text-gray-400"
+                    }`}>
+                      {message.time}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed">{message.text}</p>
+                </div>
               </div>
             ))}
           </div>
         </article>
 
-        <aside className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Metadata</h2>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div>
-              <dt className="text-gray-500">Customer</dt>
-              <dd className="text-gray-900">{conversation.customer}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Channel</dt>
-              <dd className="text-gray-900">{conversation.channel}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Assignee</dt>
-              <dd className="text-gray-900">{assignee}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Current State</dt>
-              <dd className="text-gray-900">{actionSummary}</dd>
-            </div>
-          </dl>
+        <aside className="space-y-6">
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-900">Ticket Details</h2>
+            <dl className="mt-4 space-y-4 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Customer</dt>
+                <dd className="text-gray-900 font-medium">{conversation.customer}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Channel</dt>
+                <dd className="text-gray-900 font-medium">{conversation.channel}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Assignee</dt>
+                <dd className="text-gray-900 font-medium">{assignee}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Status</dt>
+                <dd className="text-gray-900 font-medium">{actionSummary}</dd>
+              </div>
+            </dl>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge variant={badgeVariantForPriority(priority)}>
-              {priority} priority
-            </Badge>
-            <Badge variant={badgeVariantForStatus(status)}>{status}</Badge>
-            {conversation.tags.map((tag) => (
-              <Badge key={tag}>{tag}</Badge>
-            ))}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {conversation.tags.map((tag) => (
+                  <Badge key={tag} variant="neutral">{tag}</Badge>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 space-y-2">
-            <h3 className="text-sm font-semibold text-gray-900">Actions</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <div className="mt-4 grid grid-cols-2 gap-3">
               <button
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                className="flex flex-col items-center gap-2 rounded-lg border border-gray-200 p-4 text-center hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 transition-colors"
                 onClick={assignToQueue}
                 type="button"
               >
-                Assign
+                <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-xs font-medium text-gray-900">Assign</span>
               </button>
               <button
-                className="rounded-md border border-green-300 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300 focus-visible:ring-offset-2"
+                className="flex flex-col items-center gap-2 rounded-lg border border-green-200 p-4 text-center hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 transition-colors"
                 onClick={resolveConversation}
                 type="button"
               >
-                Resolve
+                <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs font-medium text-gray-900">Resolve</span>
               </button>
               <button
-                className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2"
+                className="flex flex-col items-center gap-2 rounded-lg border border-red-200 p-4 text-center hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 transition-colors"
                 onClick={escalateConversation}
                 type="button"
               >
-                Escalate
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span className="text-xs font-medium text-gray-900">Escalate</span>
               </button>
               <button
-                className="rounded-md border border-indigo-300 px-3 py-1.5 text-sm text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-2"
+                className="flex flex-col items-center gap-2 rounded-lg border border-indigo-200 p-4 text-center hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 transition-colors"
                 onClick={() => setHandoffOpen(true)}
                 type="button"
               >
-                Handoff to Human
+                <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span className="text-xs font-medium text-gray-900">Handoff</span>
               </button>
             </div>
           </div>
@@ -399,27 +450,39 @@ export function ConversationDetailClient({
         </aside>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="rounded-lg border border-gray-200 bg-white p-4 xl:col-span-2">
-          <h2 className="text-lg font-semibold">Internal Notes</h2>
+      <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <article className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
+          <header className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Internal Notes</h2>
+            <p className="mt-1 text-sm text-gray-600">Add context, resolution details, or follow-up actions</p>
+          </header>
           <textarea
-            className="mt-4 min-h-36 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+            className="min-h-40 w-full rounded-md border border-gray-300 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 resize-none"
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Add internal context, handoff details, or follow-up actions."
+            placeholder="Document resolution steps, customer preferences, or escalation details..."
             value={notes}
           />
         </article>
 
-        <aside className="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 className="text-lg font-semibold">Timeline</h2>
-          <ul className="mt-4 space-y-3">
+        <aside className="rounded-lg border border-gray-200 bg-white p-6">
+          <header className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Activity Timeline</h2>
+            <p className="mt-1 text-sm text-gray-600">Recent updates and changes</p>
+          </header>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {timeline.map((entry) => (
-              <li key={entry.id} className="rounded-md border border-gray-100 bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">{formatIsoTimestamp(entry.time)}</p>
-                <p className="mt-1 text-sm text-gray-700">{entry.text}</p>
-              </li>
+              <div key={entry.id} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <div className="h-full w-px bg-gray-200 mt-1"></div>
+                </div>
+                <div className="flex-1 pb-4">
+                  <p className="text-xs text-gray-500">{formatIsoTimestamp(entry.time)}</p>
+                  <p className="mt-1 text-sm text-gray-700 leading-relaxed">{entry.text}</p>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </aside>
       </section>
 
