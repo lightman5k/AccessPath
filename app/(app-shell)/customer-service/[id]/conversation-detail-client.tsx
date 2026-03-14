@@ -266,6 +266,8 @@ export function ConversationDetailClient({
     return () => clearInterval(interval);
   }, [conversation.transcript]);
 
+  const actionSummary = `${status} - Assigned to ${assignee}`;
+
   const assignToQueue = () => {
     setAssignee("Tier-2 Queue");
     setUpdatedAt(new Date().toISOString());
@@ -413,11 +415,11 @@ export function ConversationDetailClient({
             <p className="text-sm text-gray-500">AI Assessment</p>
             <div className="flex items-center gap-2">
               <div className={`h-2 w-2 rounded-full ${
-                getAiInsights(conversation.topic, conversation.channel).urgency === 'High' ? 'bg-red-500' :
-                getAiInsights(conversation.topic, conversation.channel).urgency === 'Medium' ? 'bg-amber-500' : 'bg-green-500'
+                getAiInsights(conversation.topic).urgency === 'High' ? 'bg-red-500' :
+                getAiInsights(conversation.topic).urgency === 'Medium' ? 'bg-amber-500' : 'bg-green-500'
               }`} />
               <span className="text-sm font-medium text-gray-900">
-                {getAiInsights(conversation.topic, conversation.channel).urgency} Urgency
+                {getAiInsights(conversation.topic).urgency} Urgency
               </span>
             </div>
             <p className="text-sm text-gray-600">
