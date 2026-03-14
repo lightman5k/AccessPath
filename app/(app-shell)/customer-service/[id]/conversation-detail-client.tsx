@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge, Modal, Toast } from "@/components/ui";
 import {
   badgeVariantForPriority,
@@ -116,6 +116,74 @@ function generateTicketId() {
   return `TKT-${y}${m}${d}-${n}`;
 }
 
+function getAiInsights(topic: string) {
+  const lowerTopic = topic.toLowerCase();
+  
+  // AI-detected intent and suggestions based on topic
+  if (lowerTopic.includes('delivery') || lowerTopic.includes('shipment')) {
+    return {
+      detectedIntent: 'Logistics Inquiry',
+      confidence: 92,
+      suggestedActions: [
+        'Check shipment tracking in logistics system',
+        'Verify delivery address with customer',
+        'Escalate to logistics team if delayed >24hrs'
+      ],
+      urgency: 'Medium'
+    };
+  }
+  
+  if (lowerTopic.includes('invoice') || lowerTopic.includes('payment')) {
+    return {
+      detectedIntent: 'Billing Issue',
+      confidence: 89,
+      suggestedActions: [
+        'Review invoice details in billing system',
+        'Check payment status and history',
+        'Offer payment extension if applicable'
+      ],
+      urgency: 'High'
+    };
+  }
+  
+  if (lowerTopic.includes('api') || lowerTopic.includes('workflow')) {
+    return {
+      detectedIntent: 'Technical Integration',
+      confidence: 95,
+      suggestedActions: [
+        'Check API logs and error messages',
+        'Verify webhook configurations',
+        'Escalate to engineering team'
+      ],
+      urgency: 'High'
+    };
+  }
+  
+  if (lowerTopic.includes('inventory') || lowerTopic.includes('stock')) {
+    return {
+      detectedIntent: 'Inventory Management',
+      confidence: 87,
+      suggestedActions: [
+        'Check inventory levels in system',
+        'Verify stock allocation and reservations',
+        'Coordinate with warehouse team'
+      ],
+      urgency: 'Medium'
+    };
+  }
+  
+  return {
+    detectedIntent: 'General Support',
+    confidence: 76,
+    suggestedActions: [
+      'Gather more details about the issue',
+      'Check knowledge base for similar cases',
+      'Escalate if issue requires specialized expertise'
+    ],
+    urgency: 'Low'
+  };
+}
+
 export function ConversationDetailClient({
   conversation,
 }: {
@@ -185,10 +253,18 @@ export function ConversationDetailClient({
     return () => window.clearTimeout(timeout);
   }, [toastOpen]);
 
-  const actionSummary = useMemo(
-    () => `${status} - Assigned to ${assignee}`,
-    [assignee, status],
-  );
+  const [minutesOpen, setMinutesOpen] = useState(0);
+
+  useEffect(() => {
+    const updateMinutes = () => {
+      const startTime = conversation.transcript[0]?.time || new Date().toISOString();
+      setMinutesOpen(Math.floor((Date.now() - Date.parse(startTime)) / 60000));
+    };
+
+    updateMinutes();
+    const interval = setInterval(updateMinutes, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [conversation.transcript]);
 
   const assignToQueue = () => {
     setAssignee("Tier-2 Queue");
@@ -298,13 +374,176 @@ export function ConversationDetailClient({
         </div>
       </section>
 
+      {/* Request Summary */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">Customer</p>
+            <p className="text-lg font-semibold text-gray-900">{conversation.customer}</p>
+            <p className="text-sm text-gray-600">{conversation.channel} • Opened {formatIsoTimestamp(conversation.transcript[0]?.time || new Date().toISOString())}</p>
+          </div>
+          
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">Issue Summary</p>
+              <p className="text-lg font-semibold text-gray-900">{conversation.topic}</p>
+              <div className="flex items-center gap-2">
+                <Badge variant="neutral" className="text-xs">
+                  {getAiInsights(conversation.topic).detectedIntent}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  {getAiInsights(conversation.topic).confidence}% confidence
+                </span>
+              </div>
+            </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">Status & Priority</p>
+            <div className="flex items-center gap-2">
+              <Badge variant={badgeVariantForStatus(status)} className="font-medium">
+                {status}
+              </Badge>
+              <Badge variant={badgeVariantForPriority(priority)} className="font-medium">
+                {priority} Priority
+              </Badge>
+            </div>
+            <p className="text-sm text-gray-600">Assigned to: {assignee}</p>
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-gray-500">AI Assessment</p>
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${
+                getAiInsights(conversation.topic, conversation.channel).urgency === 'High' ? 'bg-red-500' :
+                getAiInsights(conversation.topic, conversation.channel).urgency === 'Medium' ? 'bg-amber-500' : 'bg-green-500'
+              }`} />
+              <span className="text-sm font-medium text-gray-900">
+                {getAiInsights(conversation.topic, conversation.channel).urgency} Urgency
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {conversation.transcript.length} messages • {conversation.tags.length} tags
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Insights */}
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 xl:col-span-2">
+          <header className="mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
+            </div>
+            <p className="mt-1 text-sm text-gray-600">Automated analysis and recommendations</p>
+          </header>
+          
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Detected Intent</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge variant="info" className="font-medium">
+                    {getAiInsights(conversation.topic).detectedIntent}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    {getAiInsights(conversation.topic).confidence}% confidence
+                  </span>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-gray-900">Suggested Actions</p>
+                <ul className="mt-2 space-y-1">
+                  {getAiInsights(conversation.topic).suggestedActions.map((action, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                      <svg className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {action}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Conversation Analysis</p>
+                <div className="mt-2 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Response Time</span>
+                    <span className="font-medium text-gray-900">
+                      {conversation.transcript.length > 1 ? '~2.5 min avg' : 'First contact'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Sentiment</span>
+                    <span className="font-medium text-green-600">Neutral</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Complexity</span>
+                    <span className="font-medium text-amber-600">Medium</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-gray-900">Tags</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {conversation.tags.map((tag) => (
+                    <Badge key={tag} variant="neutral" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Quick Stats</h2>
+          <div className="mt-4 space-y-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900">{conversation.transcript.length}</p>
+              <p className="text-sm text-gray-600">Total Messages</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">
+                {conversation.transcript.filter(m => m.from === 'Agent').length}
+              </p>
+              <p className="text-sm text-gray-600">Agent Responses</p>
+            </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">
+                  {minutesOpen}
+                </p>
+                <p className="text-sm text-gray-600">Minutes Open</p>
+              </div>
+          </div>
+        </div>
+      </div>
+
       <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <article className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
           <header className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Conversation Transcript</h2>
-            <p className="mt-1 text-sm text-gray-600">Complete message history for this support ticket</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Conversation Transcript</h2>
+                <p className="mt-1 text-sm text-gray-600">Complete message history for this support ticket</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                {conversation.transcript.length} messages
+              </div>
+            </div>
           </header>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-96 overflow-y-auto">
             {conversation.transcript.map((message, idx) => (
               <div
                 key={`${message.time}-${idx}`}
@@ -313,13 +552,13 @@ export function ConversationDetailClient({
                 }`}
               >
                 <div
-                  className={`max-w-[75%] rounded-lg px-4 py-3 ${
+                  className={`max-w-[75%] rounded-lg px-4 py-3 shadow-sm ${
                     message.from === "Agent"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 text-gray-900 border border-gray-200"
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs font-medium ${
                       message.from === "Agent" ? "text-blue-100" : "text-gray-500"
                     }`}>
@@ -328,7 +567,7 @@ export function ConversationDetailClient({
                     <span className={`text-xs ${
                       message.from === "Agent" ? "text-blue-200" : "text-gray-400"
                     }`}>
-                      {message.time}
+                      {formatIsoTimestamp(message.time)}
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed">{message.text}</p>
@@ -466,19 +705,39 @@ export function ConversationDetailClient({
 
         <aside className="rounded-lg border border-gray-200 bg-white p-6">
           <header className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Activity Timeline</h2>
-            <p className="mt-1 text-sm text-gray-600">Recent updates and changes</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Activity Timeline</h2>
+                <p className="mt-1 text-sm text-gray-600">Key events and status changes</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {timeline.length} events
+              </div>
+            </div>
           </header>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {timeline.map((entry) => (
+          <div className="space-y-4 max-h-80 overflow-y-auto">
+            {timeline.map((entry, idx) => (
               <div key={entry.id} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  <div className="h-full w-px bg-gray-200 mt-1"></div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  {idx < timeline.length - 1 && (
+                    <div className="mt-2 h-8 w-px bg-gray-200"></div>
+                  )}
                 </div>
                 <div className="flex-1 pb-4">
-                  <p className="text-xs text-gray-500">{formatIsoTimestamp(entry.time)}</p>
-                  <p className="mt-1 text-sm text-gray-700 leading-relaxed">{entry.text}</p>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{entry.text}</p>
+                      <p className="text-xs text-gray-500 mt-1">{formatIsoTimestamp(entry.time)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

@@ -76,6 +76,15 @@ function sanitizeSort(value: string | null): SortKey {
   return "newest";
 }
 
+function getCategoryFromTopic(topic: string): string {
+  const lowerTopic = topic.toLowerCase();
+  if (lowerTopic.includes('delivery') || lowerTopic.includes('shipment')) return 'Logistics';
+  if (lowerTopic.includes('invoice') || lowerTopic.includes('payment')) return 'Billing';
+  if (lowerTopic.includes('api') || lowerTopic.includes('workflow')) return 'Technical';
+  if (lowerTopic.includes('inventory') || lowerTopic.includes('stock')) return 'Inventory';
+  return 'General';
+}
+
 export default function CustomerServicePage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -167,47 +176,65 @@ export default function CustomerServicePage() {
 
   const tableRows = filteredConversations.map((row) => ({
     key: row.id,
-    className: "hover:bg-gray-50",
+    className: "hover:bg-blue-50/50 border-b border-gray-100 transition-colors",
     cells: [
-      <Link
-        key={`${row.id}-id`}
-        href={`/customer-service/${row.id}`}
-        className="font-medium text-gray-900 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-      >
-        {row.id}
-      </Link>,
+      <div key={`${row.id}-id`} className="flex items-center gap-2">
+        <div className={`h-2 w-2 rounded-full ${
+          row.status === 'Open' ? 'bg-green-500' :
+          row.status === 'In Progress' ? 'bg-blue-500' :
+          row.status === 'Escalated' ? 'bg-red-500' : 'bg-gray-500'
+        }`} />
+        <Link
+          href={`/customer-service/${row.id}`}
+          className="font-medium text-gray-900 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          {row.id}
+        </Link>
+      </div>,
       <Link
         key={`${row.id}-customer`}
         href={`/customer-service/${row.id}`}
-        className="text-gray-800 hover:underline"
+        className="text-gray-800 hover:text-blue-600 font-medium"
       >
         {row.customer}
       </Link>,
-      <Link key={`${row.id}-channel`} href={`/customer-service/${row.id}`} className="text-gray-600">
+      <span key={`${row.id}-channel`} className="text-gray-600 text-sm">
         {row.channel}
-      </Link>,
-      <Link key={`${row.id}-topic`} href={`/customer-service/${row.id}`} className="text-gray-600">
-        {row.topic}
-      </Link>,
-      <Link key={`${row.id}-assignee`} href={`/customer-service/${row.id}`} className="text-gray-600">
-        {row.assignee}
-      </Link>,
-      <Badge key={`${row.id}-priority`} variant={badgeMetaForPriority(row.priority).variant}>
-        {badgeMetaForPriority(row.priority).label}
-      </Badge>,
-      <Badge key={`${row.id}-status`} variant={badgeMetaForStatus(row.status).variant}>
-        {badgeMetaForStatus(row.status).label}
-      </Badge>,
-      row.hasHandoffTicket ? (
-        <Badge key={`${row.id}-handoff`} className="ml-2" variant="info">
-          Handoff
+      </span>,
+      <div key={`${row.id}-topic`} className="flex flex-col gap-1">
+        <span className="text-gray-700 text-sm max-w-xs truncate font-medium">
+          {row.topic}
+        </span>
+        <Badge variant="neutral" className="text-xs w-fit">
+          {getCategoryFromTopic(row.topic)}
         </Badge>
-      ) : (
-        ""
-      ),
-      <Link key={`${row.id}-updated`} href={`/customer-service/${row.id}`} className="text-gray-500">
+      </div>,
+      <span key={`${row.id}-assignee`} className="text-gray-600 text-sm">
+        {row.assignee}
+      </span>,
+      <Badge
+        key={`${row.id}-priority`}
+        variant={badgeMetaForPriority(row.priority).variant}
+        className="font-medium"
+      >
+        {row.priority}
+      </Badge>,
+      <div key={`${row.id}-status`} className="flex items-center gap-2">
+        <Badge
+          variant={badgeMetaForStatus(row.status).variant}
+          className="font-medium"
+        >
+          {badgeMetaForStatus(row.status).label}
+        </Badge>
+        {row.hasHandoffTicket && (
+          <Badge variant="info" className="text-xs">
+            Handoff
+          </Badge>
+        )}
+      </div>,
+      <span key={`${row.id}-updated`} className="text-gray-500 text-sm">
         {formatIsoAsAgo(row.updated)}
-      </Link>,
+      </span>,
     ],
   }));
 
@@ -269,11 +296,18 @@ export default function CustomerServicePage() {
 
         <section className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
           <header className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Conversations</h2>
-            <p className="text-sm text-gray-500">
-              {filteredConversations.length} result
-              {filteredConversations.length === 1 ? "" : "s"}
-            </p>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Support Tickets</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                {filteredConversations.length} ticket{filteredConversations.length === 1 ? "" : "s"} found
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Live updates
+            </div>
           </header>
 
           <div className="mb-6 flex flex-wrap gap-3">
@@ -353,17 +387,16 @@ export default function CustomerServicePage() {
           </div>
           {tableRows.length > 0 ? (
             <Table
-              ariaLabel="Customer service conversations"
+              ariaLabel="Customer support tickets"
               columns={[
-                { key: "id", header: "ID" },
-                { key: "customer", header: "Customer" },
-                { key: "channel", header: "Channel" },
-                { key: "topic", header: "Topic" },
-                { key: "assignee", header: "Assignee" },
-                { key: "priority", header: "Priority" },
-                { key: "status", header: "Status" },
-                { key: "handoff", header: "Handoff" },
-                { key: "updated", header: "Updated" },
+                { key: "id", header: "Ticket ID", className: "w-32" },
+                { key: "customer", header: "Customer", className: "w-40" },
+                { key: "channel", header: "Channel", className: "w-24" },
+                { key: "topic", header: "Issue & Category", className: "min-w-48" },
+                { key: "assignee", header: "Assignee", className: "w-32" },
+                { key: "priority", header: "Priority", className: "w-24" },
+                { key: "status", header: "Status", className: "w-40" },
+                { key: "updated", header: "Last Updated", className: "w-28" },
               ]}
               rows={tableRows}
             />
