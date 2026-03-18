@@ -1,4 +1,13 @@
-export type { DashboardInteraction, DashboardKpi } from "./dashboard";
+export type { DashboardAiRecommendation, DashboardInteraction, DashboardKpi } from "./dashboard";
+export type {
+  ChatIntent,
+  ChatMessageTurn,
+  ChatRequest,
+  ChatResponse,
+  DashboardApiResponse,
+  DashboardRange,
+  DashboardTrendPoint,
+} from "./api";
 export type {
   ConversationDetail,
   ConversationListOverride,

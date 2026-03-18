@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Badge, EmptyState, PageHeader, StatCard, Table } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, Table } from "@/components/ui";
 import {
   customerServiceConversations,
   customerServiceKpis,
@@ -83,6 +83,38 @@ function getCategoryFromTopic(topic: string): string {
   if (lowerTopic.includes('api') || lowerTopic.includes('workflow')) return 'Technical';
   if (lowerTopic.includes('inventory') || lowerTopic.includes('stock')) return 'Inventory';
   return 'General';
+}
+
+function SectionIcon({ kind }: { kind: "queue" | "tickets" }) {
+  const commonProps = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.8,
+    viewBox: "0 0 24 24",
+  };
+
+  if (kind === "queue") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+        <path d="M6 7h12" />
+        <path d="M6 12h8" />
+        <path d="M6 17h10" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+      <path d="M7 5h10" />
+      <path d="M7 12h10" />
+      <path d="M7 19h10" />
+      <path d="M4 5h.01" />
+      <path d="M4 12h.01" />
+      <path d="M4 19h.01" />
+    </svg>
+  );
 }
 
 export default function CustomerServicePage() {
@@ -241,26 +273,43 @@ export default function CustomerServicePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Customer Support Hub"
+        title="AccessPath Customer Support Hub"
         description="Manage support tickets, monitor team performance, and resolve customer inquiries efficiently."
       />
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {customerServiceKpis.map((kpi) => (
-          <StatCard
-            key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            helperText={kpi.note}
-          />
-        ))}
+        {customerServiceKpis.map((kpi, index) => {
+          const accents = [
+            "border-sky-200 bg-gradient-to-br from-sky-50 to-white",
+            "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white",
+            "border-amber-200 bg-gradient-to-br from-amber-50 to-white",
+            "border-violet-200 bg-gradient-to-br from-violet-50 to-white",
+          ];
+
+          return (
+            <Card key={kpi.label} className={`relative overflow-hidden border ${accents[index % accents.length]} p-0 shadow-sm`}>
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gray-900 via-gray-700 to-gray-400" />
+              <div className="p-5">
+                <p className="text-sm font-medium text-gray-600">{kpi.label}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">{kpi.value}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-600">{kpi.note}</p>
+              </div>
+            </Card>
+          );
+        })}
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <section className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-1">
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm xl:col-span-1">
           <header className="mb-6">
-            <h2 className="text-lg font-semibold">Support Queue</h2>
-            <p className="mt-1 text-sm text-gray-600">Active conversations by priority</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+              <span className="rounded-full bg-amber-100 p-2 text-amber-700">
+                <SectionIcon kind="queue" />
+              </span>
+              Queue
+            </div>
+            <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Support Queue</h2>
+            <p className="mt-2 text-sm text-gray-600">Active conversations by priority</p>
           </header>
           <div className="space-y-4">
             {customerServiceQueueItems.map((item) => (
@@ -287,18 +336,24 @@ export default function CustomerServicePage() {
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-lg bg-blue-50 p-4">
+          <div className="mt-6 rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-white p-4">
             <p className="text-sm text-blue-900">
               <span className="font-medium">Total active:</span> {customerServiceQueueItems.reduce((sum, item) => sum + item.count, 0)} conversations
             </p>
           </div>
         </section>
 
-        <section className="rounded-lg border border-gray-200 bg-white p-6 xl:col-span-2">
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm xl:col-span-2">
           <header className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Support Tickets</h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                <span className="rounded-full bg-sky-100 p-2 text-sky-700">
+                  <SectionIcon kind="tickets" />
+                </span>
+                Tickets
+              </div>
+              <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Support Tickets</h2>
+              <p className="mt-2 text-sm text-gray-600">
                 {filteredConversations.length} ticket{filteredConversations.length === 1 ? "" : "s"} found
               </p>
             </div>
@@ -362,7 +417,7 @@ export default function CustomerServicePage() {
             </div>
             <div className="flex w-full gap-2 md:w-auto">
               <select
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+                className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
                 onChange={(event) => updateQuery({ sort: sanitizeSort(event.target.value) })}
                 value={sortKey}
               >
@@ -376,7 +431,7 @@ export default function CustomerServicePage() {
                 Search conversations
               </label>
               <input
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 md:w-72"
+                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 md:w-72"
                 id="conversation-search"
                 onChange={(event) => updateQuery({ q: event.target.value })}
                 placeholder="Search customer, topic, or preview"

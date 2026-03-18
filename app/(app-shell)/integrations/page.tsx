@@ -24,6 +24,27 @@ function formatLastSync(value?: string): string {
   return new Date(parsed).toLocaleString();
 }
 
+function ConnectorIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      <path d="M8 12h8" />
+      <path d="M12 8v8" />
+      <rect x="4" y="4" width="6" height="6" rx="1.5" />
+      <rect x="14" y="4" width="6" height="6" rx="1.5" />
+      <rect x="9" y="14" width="6" height="6" rx="1.5" />
+    </svg>
+  );
+}
+
 export default function IntegrationsPage() {
   const session = useMockSession();
   const [integrations, setIntegrations] = useState<IntegrationItem[]>(() => defaultStoredIntegrations());
@@ -111,9 +132,9 @@ export default function IntegrationsPage() {
       <Toast message={toastMessage} onClose={() => setToastOpen(false)} open={toastOpen} />
 
       <PageHeader
-        title="Integrations"
+        title="AccessPath Integrations"
         description="Manage connector status, test connections, and monitor sync health."
-        actions={<p className="text-sm text-gray-600">{connectedCount} connected</p>}
+        actions={<Badge variant="info" className="px-3 py-1">{connectedCount} connected</Badge>}
       />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -131,19 +152,25 @@ export default function IntegrationsPage() {
             item.id === "salesforce" && !hasFeatureAccess(session, "salesforceIntegration");
 
           return (
-            <Card key={item.id}>
+            <Card key={item.id} className="border-gray-200 bg-white shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold">{item.name}</h2>
-                  <p className="mt-1 text-sm text-gray-600">{item.description}</p>
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                    <span className="rounded-full bg-sky-100 p-2 text-sky-700">
+                      <ConnectorIcon />
+                    </span>
+                    Connector
+                  </div>
+                  <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">{item.name}</h2>
+                  <p className="mt-2 text-sm text-gray-600">{item.description}</p>
                 </div>
                 <Badge variant={meta.variant}>{meta.label}</Badge>
               </div>
 
-              <dl className="mt-4 text-sm">
+              <dl className="mt-5 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 text-sm">
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-500">Last sync</dt>
-                  <dd className="text-gray-800">{formatLastSync(item.lastSyncAt)}</dd>
+                  <dd className="font-medium text-gray-900">{formatLastSync(item.lastSyncAt)}</dd>
                 </div>
               </dl>
               {salesforceLocked ? (

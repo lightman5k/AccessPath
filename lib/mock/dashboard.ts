@@ -1,4 +1,4 @@
-import type { DashboardInteraction, DashboardKpi } from "@/types";
+import type { DashboardAiRecommendation, DashboardInteraction, DashboardKpi } from "@/types";
 
 const baseUpdatedIso = "2026-03-08T15:00:00.000Z";
 function isoMinutesAgo(minutesAgo: number): string {
@@ -92,7 +92,7 @@ export const dashboardInteractions: DashboardInteraction[] = [
   },
 ];
 
-export const dashboardAiRecommendations = [
+export const dashboardAiRecommendations: DashboardAiRecommendation[] = [
   {
     id: "rec-1",
     title: "Optimize Response Times",

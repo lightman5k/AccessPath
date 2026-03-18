@@ -1,5 +1,5 @@
 import { dashboardAiRecommendations, dashboardInteractions, dashboardKpis } from "@/lib/mock";
-import { Badge, Card, PageHeader, StatCard, Table } from "@/components/ui";
+import { Badge, Card, PageHeader, Table } from "@/components/ui";
 import { badgeMetaForStatus } from "@/lib";
 
 function minutesSinceIso(value: string): number {
@@ -16,11 +16,59 @@ function formatIsoAsAgo(value: string): string {
   return `${hours}h ago`;
 }
 
+function SectionIcon({ kind }: { kind: "trend" | "table" | "ai" | "actions" }) {
+  const commonProps = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.8,
+    viewBox: "0 0 24 24",
+  };
+
+  if (kind === "trend") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+        <path d="M4 16 9 11l3 3 8-8" />
+        <path d="M15 6h5v5" />
+      </svg>
+    );
+  }
+
+  if (kind === "table") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h16" />
+      </svg>
+    );
+  }
+
+  if (kind === "ai") {
+    return (
+      <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+        <path d="M12 4v16" />
+        <path d="M5 12h14" />
+        <path d="m7 7 10 10" />
+        <path d="m17 7-10 10" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" {...commonProps}>
+      <path d="M12 6v12" />
+      <path d="M6 12h12" />
+    </svg>
+  );
+}
+
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Dashboard"
+        title="AccessPath Admin Dashboard"
         description="Monitor operations, support activity, and performance trends."
         actions={
           <div className="flex items-center gap-2">
@@ -28,7 +76,7 @@ export default function DashboardPage() {
               Date Range
             </label>
             <select
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm shadow-sm"
               defaultValue="30d"
               id="date-range"
               name="date-range"
@@ -46,31 +94,47 @@ export default function DashboardPage() {
         aria-label="KPI cards"
         className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
       >
-        {dashboardKpis.map((kpi) => (
-          <StatCard
-            key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            helperText={
-              <>
-                <span className="font-medium text-gray-900">{kpi.change}</span>{" "}
-                {kpi.trend}
-              </>
-            }
-          />
-        ))}
+        {dashboardKpis.map((kpi, index) => {
+          const accents = [
+            "border-sky-200 bg-gradient-to-br from-sky-50 to-white",
+            "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white",
+            "border-amber-200 bg-gradient-to-br from-amber-50 to-white",
+            "border-violet-200 bg-gradient-to-br from-violet-50 to-white",
+          ];
+
+          return (
+            <Card key={kpi.label} className={`relative overflow-hidden border ${accents[index % accents.length]} p-0 shadow-sm`}>
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gray-900 via-gray-700 to-gray-400" />
+              <div className="p-5">
+                <p className="text-sm font-medium text-gray-600">{kpi.label}</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">{kpi.value}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  <span className="font-medium text-gray-950">{kpi.change}</span> {kpi.trend}
+                </p>
+              </div>
+            </Card>
+          );
+        })}
       </section>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <div className="space-y-8 xl:col-span-2">
-          <Card>
+          <Card className="border-gray-200 bg-white shadow-sm">
             <header className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Interaction Volume Trend</h2>
-              <span className="text-sm text-gray-500">Last 30 days</span>
+              <div>
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <span className="rounded-full bg-emerald-100 p-2 text-emerald-700">
+                    <SectionIcon kind="trend" />
+                  </span>
+                  Performance
+                </div>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Interaction Volume Trend</h2>
+              </div>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">Last 30 days</span>
             </header>
             <div
               aria-label="Line chart showing interaction volume over time"
-              className="relative h-80 overflow-hidden rounded-md bg-gradient-to-b from-gray-50 to-white p-4"
+              className="relative h-80 overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4"
             >
               {/* Grid lines */}
               <div className="absolute inset-x-4 top-1/4 border-t border-gray-200" />
@@ -91,15 +155,15 @@ export default function DashboardPage() {
                   points="0,80 10,75 20,60 30,65 40,45 50,50 60,35 70,40 80,25 90,30 100,20"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="text-blue-600"
+                  className="text-sky-700"
                 />
                 {/* Data points */}
-                <circle cx="0" cy="80" r="2" className="fill-blue-600" />
-                <circle cx="20" cy="60" r="2" className="fill-blue-600" />
-                <circle cx="40" cy="45" r="2" className="fill-blue-600" />
-                <circle cx="60" cy="35" r="2" className="fill-blue-600" />
-                <circle cx="80" cy="25" r="2" className="fill-blue-600" />
-                <circle cx="100" cy="20" r="2" className="fill-blue-600" />
+                <circle cx="0" cy="80" r="2" className="fill-sky-700" />
+                <circle cx="20" cy="60" r="2" className="fill-sky-700" />
+                <circle cx="40" cy="45" r="2" className="fill-sky-700" />
+                <circle cx="60" cy="35" r="2" className="fill-sky-700" />
+                <circle cx="80" cy="25" r="2" className="fill-sky-700" />
+                <circle cx="100" cy="20" r="2" className="fill-sky-700" />
               </svg>
 
               {/* Axis labels */}
@@ -111,10 +175,18 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border-gray-200 bg-white shadow-sm">
             <header className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Recent Interactions</h2>
-              <span className="text-sm text-gray-500">Last updated just now</span>
+              <div>
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <span className="rounded-full bg-blue-100 p-2 text-blue-700">
+                    <SectionIcon kind="table" />
+                  </span>
+                  Activity
+                </div>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Recent Interactions</h2>
+              </div>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">Updated now</span>
             </header>
             <Table
               ariaLabel="Recent customer interactions"
@@ -143,16 +215,22 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="border-gray-200 bg-white shadow-sm">
           <header className="mb-6">
-            <h2 className="text-lg font-semibold">AI Recommendations</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+              <span className="rounded-full bg-violet-100 p-2 text-violet-700">
+                <SectionIcon kind="ai" />
+              </span>
+              AI Guidance
+            </div>
+            <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">AI Recommendations</h2>
+            <p className="mt-2 text-sm text-gray-600">
               Data-driven insights to optimize your operations
             </p>
           </header>
           <ul className="space-y-4">
             {dashboardAiRecommendations.map((rec) => (
-              <li key={rec.id} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+              <li key={rec.id} className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{rec.title}</h3>
@@ -179,10 +257,16 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-gray-200 bg-white shadow-sm">
         <header className="mb-6">
-          <h2 className="text-lg font-semibold">Quick Actions</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <span className="rounded-full bg-amber-100 p-2 text-amber-700">
+              <SectionIcon kind="actions" />
+            </span>
+            Workflow
+          </div>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Quick Actions</h2>
+          <p className="mt-2 text-sm text-gray-600">
             Common tasks to manage your operations efficiently
           </p>
         </header>
