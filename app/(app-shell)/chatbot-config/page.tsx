@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Card, PageHeader } from "@/components/ui";
+import type { ChatResponse } from "@/types";
 
 type ToneOption = "Helpful & professional" | "Concise & direct" | "Warm & consultative";
 type FaqStatus = "active" | "draft";
@@ -11,13 +12,6 @@ type FaqItem = {
   question: string;
   answer: string;
   status: FaqStatus;
-};
-
-type TestPreview = {
-  intent: string;
-  response: string;
-  confidence: number;
-  handoff: boolean;
 };
 
 const toneOptions: ToneOption[] = [
@@ -61,58 +55,6 @@ const summaryCardClasses = [
   "border-violet-200 bg-gradient-to-br from-violet-50 to-white",
 ];
 
-function buildTestPreview(
-  question: string,
-  assistantName: string,
-  enableHandoff: boolean,
-  confidenceThreshold: number,
-): TestPreview {
-  const normalized = question.trim().toLowerCase();
-
-  if (!normalized) {
-    return {
-      intent: "Awaiting input",
-      response: "Enter a sample customer question to preview intent detection and suggested assistant output.",
-      confidence: 0,
-      handoff: false,
-    };
-  }
-
-  if (normalized.includes("refund") || normalized.includes("cancel")) {
-    return {
-      intent: "Billing / refund request",
-      response: `${assistantName}: I can explain the return and refund process, then connect you with a specialist if account review is needed.`,
-      confidence: 0.64,
-      handoff: enableHandoff && 0.64 < confidenceThreshold,
-    };
-  }
-
-  if (normalized.includes("late") || normalized.includes("track") || normalized.includes("where is my order")) {
-    return {
-      intent: "Order status",
-      response: `${assistantName}: I can help check shipping status and provide the latest delivery estimate based on the order record.`,
-      confidence: 0.91,
-      handoff: false,
-    };
-  }
-
-  if (normalized.includes("password") || normalized.includes("login") || normalized.includes("secure")) {
-    return {
-      intent: "Account access / security",
-      response: `${assistantName}: For account security requests, I will verify the issue and route to a human agent when sensitive changes are required.`,
-      confidence: 0.72,
-      handoff: enableHandoff && 0.72 < confidenceThreshold,
-    };
-  }
-
-  return {
-    intent: "General support",
-    response: `${assistantName}: I can answer general product and policy questions, and I will escalate when confidence is low or the request needs human review.`,
-    confidence: 0.83,
-    handoff: enableHandoff && 0.83 < confidenceThreshold,
-  };
-}
-
 function statusVariant(status: FaqStatus) {
   return status === "active" ? "success" : "warning";
 }
@@ -136,15 +78,13 @@ export default function ChatbotConfigPage() {
   const [draftQuestion, setDraftQuestion] = useState("");
   const [draftAnswer, setDraftAnswer] = useState("");
   const [testQuestion, setTestQuestion] = useState("Where is my order? It says delayed.");
+  const [testPreview, setTestPreview] = useState<ChatResponse | null>(null);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const activeFaqCount = useMemo(
     () => faqItems.filter((item) => item.status === "active").length,
     [faqItems],
-  );
-
-  const preview = useMemo(
-    () => buildTestPreview(testQuestion, assistantName, humanHandoffEnabled, confidenceThreshold),
-    [assistantName, confidenceThreshold, humanHandoffEnabled, testQuestion],
   );
 
   const toggleEscalation = (value: string) => {
@@ -181,6 +121,59 @@ export default function ChatbotConfigPage() {
   const removeFaqItem = (id: string) => {
     setFaqItems((current) => current.filter((item) => item.id !== id));
   };
+
+  useEffect(() => {
+    const message = testQuestion.trim();
+    if (!message) {
+      setTestPreview(null);
+      setTestError(null);
+      setTestLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setTestLoading(true);
+      setTestError(null);
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            channel: channelLabel,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Chat test failed with status ${response.status}.`);
+        }
+
+        const payload = (await response.json()) as ChatResponse;
+        setTestPreview(payload);
+      } catch (fetchError) {
+        if (controller.signal.aborted) return;
+        setTestError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Unable to test the assistant right now.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setTestLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [channelLabel, testQuestion]);
 
   return (
     <div className="space-y-6">
@@ -515,8 +508,20 @@ export default function ChatbotConfigPage() {
                   Preview intent detection, response quality, and whether current rules trigger a handoff.
                 </p>
               </div>
-              <Badge variant={preview.handoff ? "warning" : "success"}>
-                {preview.handoff ? "Handoff recommended" : "AI can respond"}
+              <Badge
+                variant={
+                  testLoading
+                    ? "neutral"
+                    : testPreview?.handoffRecommended
+                      ? "warning"
+                      : "success"
+                }
+              >
+                {testLoading
+                  ? "Testing..."
+                  : testPreview?.handoffRecommended
+                    ? "Handoff recommended"
+                    : "AI can respond"}
               </Badge>
             </div>
 
@@ -533,32 +538,61 @@ export default function ChatbotConfigPage() {
             </div>
 
             <div className="mt-6 space-y-4">
+              {testError ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-900">Test request failed</p>
+                  <p className="mt-1 text-sm text-amber-800">{testError}</p>
+                </div>
+              ) : null}
+
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Detected intent</p>
-                <p className="mt-2 text-sm font-medium text-gray-900">{preview.intent}</p>
+                <p className="mt-2 text-sm font-medium text-gray-900">
+                  {testPreview?.intent ?? "Awaiting input"}
+                </p>
               </div>
 
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                   Suggested response preview
                 </p>
-                <p className="mt-2 text-sm leading-6 text-gray-700">{preview.response}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-700">
+                  {testPreview?.reply ??
+                    "Enter a sample customer question to preview the API-detected intent and suggested response."}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Confidence</p>
                   <p className="mt-2 text-xl font-semibold text-gray-900">
-                    {(preview.confidence * 100).toFixed(0)}%
+                    {testPreview ? `${(testPreview.confidence * 100).toFixed(0)}%` : "--"}
                   </p>
                 </div>
                 <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Handoff preview</p>
                   <p className="mt-2 text-sm font-medium text-gray-900">
-                    {preview.handoff ? "Escalate to human queue" : "Handled by assistant"}
+                    {testPreview
+                      ? testPreview.handoffRecommended
+                        ? humanHandoffEnabled
+                          ? "Escalate to human queue"
+                          : "Recommended, but handoff is disabled"
+                        : "Handled by assistant"
+                      : "Awaiting result"}
                   </p>
                 </div>
               </div>
+
+              {testPreview?.suggestedNextAction || testPreview?.reason ? (
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Suggested next action
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-gray-700">
+                    {testPreview?.suggestedNextAction ?? testPreview?.reason}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </Card>
 

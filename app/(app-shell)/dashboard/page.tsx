@@ -1,6 +1,9 @@
-import { dashboardAiRecommendations, dashboardInteractions, dashboardKpis } from "@/lib/mock";
-import { Badge, Card, PageHeader, Table } from "@/components/ui";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Badge, Card, EmptyState, PageHeader, Skeleton, Table } from "@/components/ui";
 import { badgeMetaForStatus } from "@/lib";
+import type { DashboardApiResponse, DashboardRange } from "@/types";
 
 function minutesSinceIso(value: string): number {
   const ms = Date.parse(value);
@@ -14,6 +17,12 @@ function formatIsoAsAgo(value: string): string {
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   return `${hours}h ago`;
+}
+
+function formatRangeLabel(range: DashboardRange): string {
+  if (range === "7d") return "Last 7 days";
+  if (range === "90d") return "Last 90 days";
+  return "Last 30 days";
 }
 
 function SectionIcon({ kind }: { kind: "trend" | "table" | "ai" | "actions" }) {
@@ -64,7 +73,179 @@ function SectionIcon({ kind }: { kind: "trend" | "table" | "ai" | "actions" }) {
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="AccessPath Admin Dashboard"
+        description="Monitor operations, support activity, and performance trends."
+        actions={
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-20" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+        }
+      />
+
+      <section aria-label="KPI cards" className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Card key={`dashboard-kpi-${index}`} className="p-5">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="mt-3 h-8 w-24" />
+            <Skeleton className="mt-3 h-4 w-36" />
+          </Card>
+        ))}
+      </section>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        <div className="space-y-8 xl:col-span-2">
+          <Card className="border-gray-200 bg-white shadow-sm">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="mt-6 h-80 w-full rounded-xl" />
+          </Card>
+          <Card className="border-gray-200 bg-white shadow-sm">
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="mt-6 h-48 w-full rounded-xl" />
+          </Card>
+        </div>
+        <Card className="border-gray-200 bg-white shadow-sm">
+          <Skeleton className="h-6 w-40" />
+          <div className="mt-6 space-y-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={`dashboard-rec-${index}`} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const [range, setRange] = useState<DashboardRange>("30d");
+  const [dashboardData, setDashboardData] = useState<DashboardApiResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadDashboard() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/dashboard?range=${range}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Dashboard request failed with status ${response.status}.`);
+        }
+
+        const payload = (await response.json()) as DashboardApiResponse;
+        setDashboardData(payload);
+      } catch (fetchError) {
+        if (controller.signal.aborted) return;
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Unable to load dashboard data.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => controller.abort();
+  }, [range, retryKey]);
+
+  const trendMeta = useMemo(() => {
+    const trend = dashboardData?.trend ?? [];
+    if (trend.length === 0) {
+      return {
+        points: "",
+        plottedPoints: [] as Array<{ x: number; y: number }>,
+        maxConversations: 0,
+      };
+    }
+
+    const maxConversations = Math.max(...trend.map((point) => point.conversations));
+    const step = trend.length > 1 ? 100 / (trend.length - 1) : 50;
+
+    const plottedPoints = trend.map((point, index) => {
+      const x = trend.length > 1 ? index * step : 50;
+      const y = 85 - (point.conversations / maxConversations) * 65;
+      return { x, y };
+    });
+
+    return {
+      points: plottedPoints.map((point) => `${point.x},${point.y}`).join(" "),
+      plottedPoints,
+      maxConversations,
+    };
+  }, [dashboardData]);
+
+  const averageResolutionRate = useMemo(() => {
+    if (!dashboardData || dashboardData.trend.length === 0) return null;
+    return (
+      dashboardData.trend.reduce((sum, point) => sum + point.resolutionRate, 0) /
+      dashboardData.trend.length
+    );
+  }, [dashboardData]);
+
+  const averageResponseTime = useMemo(() => {
+    if (!dashboardData || dashboardData.trend.length === 0) return null;
+    return (
+      dashboardData.trend.reduce((sum, point) => sum + point.avgResponseMinutes, 0) /
+      dashboardData.trend.length
+    );
+  }, [dashboardData]);
+
+  if (!dashboardData && loading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!dashboardData && error) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          title="AccessPath Admin Dashboard"
+          description="Monitor operations, support activity, and performance trends."
+        />
+        <Card className="border-gray-200 bg-white shadow-sm">
+          <EmptyState
+            title="Dashboard data could not be loaded"
+            description={error}
+            className="py-12"
+          />
+          <div className="mt-4 flex justify-center">
+            <button
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                setDashboardData(null);
+                setRetryKey((current) => current + 1);
+              }}
+              type="button"
+            >
+              Retry
+            </button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!dashboardData) return null;
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -77,24 +258,32 @@ export default function DashboardPage() {
             </label>
             <select
               className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm shadow-sm"
-              defaultValue="30d"
               id="date-range"
               name="date-range"
+              onChange={(event) => setRange(event.target.value as DashboardRange)}
+              value={range}
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
               <option value="90d">Last 90 days</option>
-              <option value="ytd">Year to date</option>
             </select>
+            {loading ? <Badge variant="neutral">Updating...</Badge> : null}
           </div>
         }
       />
+
+      {error ? (
+        <Card className="border-amber-200 bg-amber-50 shadow-sm">
+          <p className="text-sm font-medium text-amber-900">Dashboard refresh failed</p>
+          <p className="mt-1 text-sm text-amber-800">{error}</p>
+        </Card>
+      ) : null}
 
       <section
         aria-label="KPI cards"
         className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
       >
-        {dashboardKpis.map((kpi, index) => {
+        {dashboardData.kpis.map((kpi, index) => {
           const accents = [
             "border-sky-200 bg-gradient-to-br from-sky-50 to-white",
             "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white",
@@ -128,15 +317,18 @@ export default function DashboardPage() {
                   </span>
                   Performance
                 </div>
-                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Interaction Volume Trend</h2>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">
+                  Interaction Volume Trend
+                </h2>
               </div>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">Last 30 days</span>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                {formatRangeLabel(dashboardData.range)}
+              </span>
             </header>
             <div
               aria-label="Line chart showing interaction volume over time"
               className="relative h-80 overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4"
             >
-              {/* Grid lines */}
               <div className="absolute inset-x-4 top-1/4 border-t border-gray-200" />
               <div className="absolute inset-x-4 top-2/4 border-t border-gray-200" />
               <div className="absolute inset-x-4 top-3/4 border-t border-gray-200" />
@@ -144,7 +336,6 @@ export default function DashboardPage() {
               <div className="absolute left-2/4 inset-y-4 border-l border-gray-200" />
               <div className="absolute left-3/4 inset-y-4 border-l border-gray-200" />
 
-              {/* Chart */}
               <svg
                 aria-hidden="true"
                 className="absolute inset-4 h-full w-full"
@@ -152,23 +343,28 @@ export default function DashboardPage() {
               >
                 <polyline
                   fill="none"
-                  points="0,80 10,75 20,60 30,65 40,45 50,50 60,35 70,40 80,25 90,30 100,20"
+                  points={trendMeta.points}
                   stroke="currentColor"
                   strokeWidth="2"
                   className="text-sky-700"
                 />
-                {/* Data points */}
-                <circle cx="0" cy="80" r="2" className="fill-sky-700" />
-                <circle cx="20" cy="60" r="2" className="fill-sky-700" />
-                <circle cx="40" cy="45" r="2" className="fill-sky-700" />
-                <circle cx="60" cy="35" r="2" className="fill-sky-700" />
-                <circle cx="80" cy="25" r="2" className="fill-sky-700" />
-                <circle cx="100" cy="20" r="2" className="fill-sky-700" />
+                {trendMeta.plottedPoints.map((point, index) => (
+                  <circle
+                    key={`trend-point-${dashboardData.trend[index]?.label ?? index}`}
+                    cx={point.x}
+                    cy={point.y}
+                    r="2"
+                    className="fill-sky-700"
+                  />
+                ))}
               </svg>
 
-              {/* Axis labels */}
-              <div className="absolute bottom-0 left-4 text-xs text-gray-500">Mar 1</div>
-              <div className="absolute bottom-0 right-4 text-xs text-gray-500">Mar 30</div>
+              <div className="absolute bottom-0 left-4 text-xs text-gray-500">
+                {dashboardData.trend[0]?.label}
+              </div>
+              <div className="absolute bottom-0 right-4 text-xs text-gray-500">
+                {dashboardData.trend[dashboardData.trend.length - 1]?.label}
+              </div>
               <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-gray-500 transform">
                 Volume
               </div>
@@ -184,9 +380,13 @@ export default function DashboardPage() {
                   </span>
                   Activity
                 </div>
-                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">Recent Interactions</h2>
+                <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">
+                  Recent Interactions
+                </h2>
               </div>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">Updated now</span>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                {formatIsoAsAgo(dashboardData.generatedAt)}
+              </span>
             </header>
             <Table
               ariaLabel="Recent customer interactions"
@@ -198,7 +398,7 @@ export default function DashboardPage() {
                 { key: "status", header: "Status" },
                 { key: "updated", header: "Updated" },
               ]}
-              rows={dashboardInteractions.map((row) => ({
+              rows={dashboardData.recentActivity.map((row) => ({
                 key: row.id,
                 cells: [
                   row.id,
@@ -215,46 +415,75 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <Card className="border-gray-200 bg-white shadow-sm">
-          <header className="mb-6">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
-              <span className="rounded-full bg-violet-100 p-2 text-violet-700">
-                <SectionIcon kind="ai" />
-              </span>
-              AI Guidance
+        <div className="space-y-8">
+          <Card className="border-gray-200 bg-white shadow-sm">
+            <header className="mb-6">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                <span className="rounded-full bg-violet-100 p-2 text-violet-700">
+                  <SectionIcon kind="ai" />
+                </span>
+                AI Guidance
+              </div>
+              <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">
+                AI Recommendations
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Data-driven insights to optimize your operations
+              </p>
+            </header>
+            <ul className="space-y-4">
+              {dashboardData.aiRecommendations.map((rec) => (
+                <li key={rec.id} className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{rec.title}</h3>
+                      <p className="mt-1 text-sm text-gray-600">{rec.description}</p>
+                    </div>
+                    <div className="ml-4 flex flex-col items-end gap-2">
+                      <Badge
+                        variant={
+                          rec.impact === "High"
+                            ? "success"
+                            : rec.impact === "Medium"
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {rec.impact} Impact
+                      </Badge>
+                      <span className="text-xs text-gray-500">{rec.category}</span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card className="border-gray-200 bg-white shadow-sm">
+            <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Resolution trend
+              </p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">
+                {averageResolutionRate?.toFixed(0) ?? "--"}%
+              </p>
+              <p className="mt-1 text-sm text-gray-600">
+                Average AI-led resolution across the selected range.
+              </p>
             </div>
-            <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">AI Recommendations</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Data-driven insights to optimize your operations
-            </p>
-          </header>
-          <ul className="space-y-4">
-            {dashboardAiRecommendations.map((rec) => (
-              <li key={rec.id} className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{rec.title}</h3>
-                    <p className="mt-1 text-sm text-gray-600">{rec.description}</p>
-                  </div>
-                  <div className="ml-4 flex flex-col items-end gap-2">
-                    <Badge
-                      variant={
-                        rec.impact === "High"
-                          ? "success"
-                          : rec.impact === "Medium"
-                          ? "warning"
-                          : "neutral"
-                      }
-                    >
-                      {rec.impact} Impact
-                    </Badge>
-                    <span className="text-xs text-gray-500">{rec.category}</span>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+            <div className="mt-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Response trend
+              </p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">
+                {averageResponseTime?.toFixed(0) ?? "--"}m
+              </p>
+              <p className="mt-1 text-sm text-gray-600">
+                Average response speed across the selected range.
+              </p>
+            </div>
+          </Card>
+        </div>
       </div>
 
       <Card className="border-gray-200 bg-white shadow-sm">

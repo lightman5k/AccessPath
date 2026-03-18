@@ -18,6 +18,28 @@ export type DashboardApiResponse = {
   aiRecommendations: DashboardAiRecommendation[];
 };
 
+export type InsightPriority = "high" | "medium" | "low";
+export type InsightCategory = "Support" | "Operations" | "Automation" | "Knowledge";
+export type InsightStatus = "new" | "in-review" | "ready";
+
+export type InsightItem = {
+  id: string;
+  title: string;
+  category: InsightCategory;
+  priority: InsightPriority;
+  confidence: number;
+  recommendation: string;
+  reason: string;
+  estimatedTimeSaved: string;
+  automationOpportunity: boolean;
+  status: InsightStatus;
+};
+
+export type InsightsApiResponse = {
+  generatedAt: string;
+  items: InsightItem[];
+};
+
 export type ChatMessageTurn = {
   role: "user" | "assistant";
   content: string;

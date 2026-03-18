@@ -7,6 +7,11 @@ export type {
   DashboardApiResponse,
   DashboardRange,
   DashboardTrendPoint,
+  InsightCategory,
+  InsightItem,
+  InsightPriority,
+  InsightStatus,
+  InsightsApiResponse,
 } from "./api";
 export type {
   ConversationDetail,
