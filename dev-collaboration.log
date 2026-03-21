@@ -1,0 +1,8 @@
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3010
+- Network:       http://192.168.1.67:3010
+
+✓ Starting...
+⨯ Unable to acquire lock at C:\Users\tzjsl\OneDrive\AccessPath\accesspath-web\.next\dev\lock, is another instance of next dev running?
+  Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
+[?25h

@@ -1,4 +1,5 @@
 import type { DashboardAiRecommendation, DashboardInteraction, DashboardKpi } from "./dashboard";
+import type { IntegrationId, IntegrationStatus } from "./integrations";
 
 export type DashboardRange = "7d" | "30d" | "90d";
 
@@ -71,4 +72,48 @@ export type ChatResponse = {
   reason?: string;
   matchedFaq?: string;
   conversationId?: string;
+};
+
+export type ScheduleRequest = {
+  message: string;
+  preferredDate?: string;
+  timezone?: string;
+  durationMinutes?: number;
+};
+
+export type ScheduleSlot = {
+  id: string;
+  startIso: string;
+  endIso: string;
+  label: string;
+  timezone: string;
+};
+
+export type ScheduleResponse = {
+  intent: "booking";
+  confidence: number;
+  reply: string;
+  availableSlots: ScheduleSlot[];
+  suggestedNextAction?: string;
+};
+
+export type IntegrationSyncState = "idle" | "syncing" | "error";
+
+export type IntegrationAction = "connect" | "reconnect" | "manage";
+
+export type IntegrationApiItem = {
+  id: IntegrationId;
+  name: string;
+  provider: string;
+  category: string;
+  description: string;
+  status: IntegrationStatus;
+  syncState: IntegrationSyncState;
+  lastSyncAt?: string;
+  availableActions?: IntegrationAction[];
+};
+
+export type IntegrationsApiResponse = {
+  generatedAt: string;
+  items: IntegrationApiItem[];
 };

@@ -7,11 +7,18 @@ export type {
   DashboardApiResponse,
   DashboardRange,
   DashboardTrendPoint,
+  IntegrationAction,
+  IntegrationApiItem,
+  IntegrationsApiResponse,
+  IntegrationSyncState,
   InsightCategory,
   InsightItem,
   InsightPriority,
   InsightStatus,
   InsightsApiResponse,
+  ScheduleRequest,
+  ScheduleResponse,
+  ScheduleSlot,
 } from "./api";
 export type {
   ConversationDetail,

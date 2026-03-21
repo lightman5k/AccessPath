@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge, Card, EmptyState, Modal, PageHeader, Toast } from "@/components/ui";
 import {
   badgeMetaForIntegrationStatus,
-  defaultStoredIntegrations,
   readStoredIntegrations,
   writeStoredIntegrations,
 } from "@/lib";
@@ -15,13 +14,19 @@ import {
   saveMockSession,
   useMockSession,
 } from "@/lib/mock";
-import type { IntegrationId, IntegrationItem } from "@/types";
+import type { IntegrationApiItem, IntegrationId, IntegrationItem, IntegrationsApiResponse } from "@/types";
 
 function formatLastSync(value?: string): string {
   if (!value) return "Never";
   const parsed = Date.parse(value);
   if (Number.isNaN(parsed)) return "Never";
   return new Date(parsed).toLocaleString();
+}
+
+function syncStateForStatus(status: IntegrationItem["status"]): IntegrationApiItem["syncState"] {
+  if (status === "syncing") return "syncing";
+  if (status === "error") return "error";
+  return "idle";
 }
 
 function ConnectorIcon() {
@@ -47,25 +52,84 @@ function ConnectorIcon() {
 
 export default function IntegrationsPage() {
   const session = useMockSession();
-  const [integrations, setIntegrations] = useState<IntegrationItem[]>(() => defaultStoredIntegrations());
+  const [integrations, setIntegrations] = useState<IntegrationApiItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [apiReady, setApiReady] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [salesforceLockedOpen, setSalesforceLockedOpen] = useState(false);
 
   useEffect(() => {
-    const hydrateIntegrations = () => {
-      const stored = readStoredIntegrations();
-      setIntegrations(stored ?? defaultStoredIntegrations());
+    let active = true;
+
+    const loadIntegrations = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/integrations", { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const payload = (await response.json()) as IntegrationsApiResponse;
+        const stored = readStoredIntegrations();
+        const storedById = new Map(stored?.map((item) => [item.id, item]) ?? []);
+        const mergedItems = payload.items.map((item) => {
+          const storedItem = storedById.get(item.id);
+          return storedItem
+            ? {
+                ...item,
+                status: storedItem.status,
+                syncState: syncStateForStatus(storedItem.status),
+                lastSyncAt: storedItem.lastSyncAt,
+              }
+            : item;
+        });
+
+        if (!active) return;
+
+        setIntegrations(mergedItems);
+        setApiReady(true);
+      } catch {
+        if (!active) return;
+        setError("Unable to load integration status. Retry to refresh the demo data.");
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     };
 
-    hydrateIntegrations();
-    window.addEventListener(demoDataResetEvent, hydrateIntegrations);
-    return () => window.removeEventListener(demoDataResetEvent, hydrateIntegrations);
+    void loadIntegrations();
+
+    return () => {
+      active = false;
+    };
+  }, [retryKey]);
+
+  useEffect(() => {
+    const handleDemoReset = () => setRetryKey((value) => value + 1);
+    window.addEventListener(demoDataResetEvent, handleDemoReset);
+    return () => window.removeEventListener(demoDataResetEvent, handleDemoReset);
   }, []);
 
   useEffect(() => {
-    writeStoredIntegrations(integrations);
-  }, [integrations]);
+    if (!apiReady) return;
+
+    const storedItems: IntegrationItem[] = integrations.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      status: item.status,
+      lastSyncAt: item.lastSyncAt,
+    }));
+
+    writeStoredIntegrations(storedItems);
+  }, [apiReady, integrations]);
 
   useEffect(() => {
     if (!toastOpen) return;
@@ -78,17 +142,21 @@ export default function IntegrationsPage() {
     [integrations],
   );
 
-  const updateIntegration = (id: IntegrationId, updater: (item: IntegrationItem) => IntegrationItem) => {
+  const updateIntegration = (
+    id: IntegrationId,
+    updater: (item: IntegrationApiItem) => IntegrationApiItem,
+  ) => {
     setIntegrations((prev) => prev.map((item) => (item.id === id ? updater(item) : item)));
   };
 
   const connectIntegration = (id: IntegrationId) => {
-    updateIntegration(id, (item) => ({ ...item, status: "syncing" }));
+    updateIntegration(id, (item) => ({ ...item, status: "syncing", syncState: "syncing" }));
 
     window.setTimeout(() => {
       updateIntegration(id, (item) => ({
         ...item,
         status: "connected",
+        syncState: "idle",
         lastSyncAt: new Date().toISOString(),
       }));
       const integration = integrations.find((item) => item.id === id);
@@ -98,14 +166,14 @@ export default function IntegrationsPage() {
   };
 
   const disconnectIntegration = (id: IntegrationId) => {
-    updateIntegration(id, (item) => ({ ...item, status: "not-connected" }));
+    updateIntegration(id, (item) => ({ ...item, status: "not-connected", syncState: "idle" }));
     const integration = integrations.find((item) => item.id === id);
     setToastMessage(`${integration?.name ?? "Integration"} disconnected.`);
     setToastOpen(true);
   };
 
   const testConnection = (id: IntegrationId) => {
-    updateIntegration(id, (item) => ({ ...item, status: "syncing" }));
+    updateIntegration(id, (item) => ({ ...item, status: "syncing", syncState: "syncing" }));
 
     window.setTimeout(() => {
       const passed = Math.random() > 0.2;
@@ -115,11 +183,12 @@ export default function IntegrationsPage() {
         updateIntegration(id, (item) => ({
           ...item,
           status: "connected",
+          syncState: "idle",
           lastSyncAt: new Date().toISOString(),
         }));
         setToastMessage(`Test passed: ${integration?.name ?? "Integration"} is reachable.`);
       } else {
-        updateIntegration(id, (item) => ({ ...item, status: "error" }));
+        updateIntegration(id, (item) => ({ ...item, status: "error", syncState: "error" }));
         setToastMessage(`Test failed: ${integration?.name ?? "Integration"} connection error.`);
       }
 
@@ -137,8 +206,55 @@ export default function IntegrationsPage() {
         actions={<Badge variant="info" className="px-3 py-1">{connectedCount} connected</Badge>}
       />
 
+      {error && integrations.length > 0 ? (
+        <Card className="border-amber-200 bg-amber-50 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-amber-800">{error}</p>
+            <button
+              className="rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
+              onClick={() => setRetryKey((value) => value + 1)}
+              type="button"
+            >
+              Retry
+            </button>
+          </div>
+        </Card>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {integrations.length === 0 ? (
+        {loading && integrations.length === 0 ? (
+          <div className="md:col-span-2">
+            <Card className="border-gray-200 bg-white shadow-sm">
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 w-32 rounded bg-gray-200" />
+                <div className="h-8 w-56 rounded bg-gray-200" />
+                <div className="h-4 w-full rounded bg-gray-100" />
+                <div className="h-4 w-5/6 rounded bg-gray-100" />
+                <div className="mt-4 h-16 rounded-xl bg-gray-100" />
+              </div>
+            </Card>
+          </div>
+        ) : error && integrations.length === 0 ? (
+          <div className="md:col-span-2">
+            <Card className="border-red-200 bg-red-50 shadow-sm">
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-base font-semibold text-red-900">Unable to load integrations</h2>
+                  <p className="mt-1 text-sm text-red-700">
+                    The integrations API did not return data for this demo view.
+                  </p>
+                </div>
+                <button
+                  className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2"
+                  onClick={() => setRetryKey((value) => value + 1)}
+                  type="button"
+                >
+                  Retry
+                </button>
+              </div>
+            </Card>
+          </div>
+        ) : integrations.length === 0 ? (
           <div className="md:col-span-2">
             <EmptyState
               title="No integrations available"
@@ -159,7 +275,7 @@ export default function IntegrationsPage() {
                     <span className="rounded-full bg-sky-100 p-2 text-sky-700">
                       <ConnectorIcon />
                     </span>
-                    Connector
+                    {item.category} via {item.provider}
                   </div>
                   <h2 className="mt-3 text-xl font-semibold tracking-tight text-gray-950">{item.name}</h2>
                   <p className="mt-2 text-sm text-gray-600">{item.description}</p>
@@ -171,6 +287,10 @@ export default function IntegrationsPage() {
                 <div className="flex items-center justify-between">
                   <dt className="text-gray-500">Last sync</dt>
                   <dd className="font-medium text-gray-900">{formatLastSync(item.lastSyncAt)}</dd>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <dt className="text-gray-500">Sync state</dt>
+                  <dd className="font-medium capitalize text-gray-900">{item.syncState}</dd>
                 </div>
               </dl>
               {salesforceLocked ? (
