@@ -6,6 +6,7 @@ import type { MockPlan, MockRole, StoredUserStatus } from "@/types";
 const planOptions: MockPlan[] = ["free", "pro", "premium"];
 const roleOptions: MockRole[] = ["agent", "admin"];
 
+
 type AdminUser = {
   id: string;
   email: string;
