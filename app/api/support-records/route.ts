@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { buildSupportRecordSourceSummary } from "@/lib/support-records/metrics";
 import { validateSupportRecordInput } from "@/lib/support-records/validation";
 import type {
@@ -27,15 +27,23 @@ export async function GET(request: NextRequest) {
     return jsonResponse<SupportRecordErrorResponse>({ error: "Authentication required." }, 401);
   }
 
-  const repository = new FileSupportRecordRepository();
-  const items = await repository.listByUserId(currentUser.id);
-  const payload: SupportRecordsApiResponse = {
-    generatedAt: new Date().toISOString(),
-    items,
-    summary: buildSupportRecordSourceSummary(items),
-  };
+  try {
+    const repository = getSupportRecordRepository();
+    const items = await repository.listByUserId(currentUser.id);
+    const payload: SupportRecordsApiResponse = {
+      generatedAt: new Date().toISOString(),
+      items,
+      summary: buildSupportRecordSourceSummary(items),
+    };
 
-  return jsonResponse(payload);
+    return jsonResponse(payload);
+  } catch (error) {
+    console.error("Support records GET failed.", error);
+    return jsonResponse<SupportRecordErrorResponse>(
+      { error: "Unable to load support records right now." },
+      500,
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -60,18 +68,27 @@ export async function POST(request: NextRequest) {
     return jsonResponse<SupportRecordErrorResponse>(validation.error, 400);
   }
 
-  const repository = new FileSupportRecordRepository();
-  await repository.create(currentUser.id, validation.data, {
-    sourceType: "manual",
-    inputMethod: "form",
-  });
+  try {
+    const repository = getSupportRecordRepository();
+    await repository.create(currentUser.id, validation.data, {
+      sourceType: "manual",
+      inputMethod: "form",
+    });
 
-  const items = await repository.listByUserId(currentUser.id);
-  const payload: SupportRecordsApiResponse = {
-    generatedAt: new Date().toISOString(),
-    items,
-    summary: buildSupportRecordSourceSummary(items),
-  };
+    const items = await repository.listByUserId(currentUser.id);
+    const payload: SupportRecordsApiResponse = {
+      generatedAt: new Date().toISOString(),
+      items,
+      summary: buildSupportRecordSourceSummary(items),
+    };
 
-  return jsonResponse(payload, 201);
+    return jsonResponse(payload, 201);
+  } catch (error) {
+    console.error("Support records POST failed.", error);
+    return jsonResponse<SupportRecordErrorResponse>(
+      { error: "Unable to save the support record right now." },
+      500,
+    );
+  }
 }
+

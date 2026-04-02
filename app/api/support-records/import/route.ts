@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { parseSupportRecordCsvImport } from "@/lib/support-records/csv";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { buildSupportRecordSourceSummary } from "@/lib/support-records/metrics";
 import type {
   ImportSupportRecordsRequest,
@@ -44,25 +44,35 @@ export async function POST(request: NextRequest) {
     return jsonResponse<SupportRecordErrorResponse>(parsedImport.error, 400);
   }
 
-  const repository = new FileSupportRecordRepository();
-  await repository.createMany(currentUser.id, parsedImport.data, {
-    sourceType: "csv",
-    inputMethod: "csv",
-  });
+  const repository = getSupportRecordRepository();
 
-  const items = await repository.listByUserId(currentUser.id);
-  const summary = buildSupportRecordSourceSummary(items);
-  if (!summary) {
+  try {
+    await repository.createMany(currentUser.id, parsedImport.data, {
+      sourceType: "csv",
+      inputMethod: "csv",
+    });
+
+    const items = await repository.listByUserId(currentUser.id);
+    const summary = buildSupportRecordSourceSummary(items);
+    if (!summary) {
+      return jsonResponse<SupportRecordErrorResponse>(
+        { error: "Imported records could not be summarized." },
+        500,
+      );
+    }
+
+    const payload: SupportRecordImportResponse = {
+      importedCount: parsedImport.data.length,
+      summary,
+    };
+
+    return jsonResponse(payload, 201);
+  } catch (error) {
+    console.error("Support record CSV import failed.", error);
     return jsonResponse<SupportRecordErrorResponse>(
-      { error: "Imported records could not be summarized." },
+      { error: "Unable to import support records right now." },
       500,
     );
   }
-
-  const payload: SupportRecordImportResponse = {
-    importedCount: parsedImport.data.length,
-    summary,
-  };
-
-  return jsonResponse(payload, 201);
 }
+

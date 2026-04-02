@@ -3,7 +3,7 @@ import { hasFeatureAccess } from "@/lib/auth/feature-access";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { FileIntegrationRepository } from "@/lib/integrations/file-integration-repository";
 import { buildSupportRecordSourceSummary } from "@/lib/support-records/metrics";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { integrationCatalog } from "@/lib/mock/integrations";
 import type {
   IntegrationApiItem,
@@ -76,7 +76,7 @@ const validIntegrationIds = new Set(integrationCatalog.map((item) => item.id));
 
 async function buildIntegrationsPayload(userId: string): Promise<IntegrationsApiResponse> {
   const repository = new FileIntegrationRepository();
-  const supportRecordRepository = new FileSupportRecordRepository();
+  const supportRecordRepository = getSupportRecordRepository();
   const [states, supportRecords] = await Promise.all([
     repository.listStatesByUserId(userId),
     supportRecordRepository.listByUserId(userId),
@@ -185,3 +185,4 @@ export async function PATCH(request: NextRequest) {
 
   return jsonResponse(await buildIntegrationsPayload(currentUser.id));
 }
+

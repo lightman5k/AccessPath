@@ -122,6 +122,19 @@ function downloadCsvTemplate() {
   URL.revokeObjectURL(url);
 }
 
+async function readJsonResponse<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error("The server returned an empty response.");
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("The server returned an invalid response.");
+  }
+}
+
 function ConnectorIcon() {
   return (
     <svg
@@ -185,7 +198,7 @@ export default function IntegrationsPage() {
           throw new Error(`Request failed with status ${response.status}.`);
         }
 
-        const payload = (await response.json()) as IntegrationsApiResponse;
+        const payload = await readJsonResponse<IntegrationsApiResponse>(response);
         setIntegrations(payload.items);
       } catch (fetchError) {
         if (controller.signal.aborted) return;
@@ -251,7 +264,7 @@ export default function IntegrationsPage() {
         body: JSON.stringify(requestBody),
       });
 
-      const payload = (await response.json()) as IntegrationsApiResponse | IntegrationErrorResponse;
+      const payload = await readJsonResponse<IntegrationsApiResponse | IntegrationErrorResponse>(response);
 
       if (!response.ok) {
         throw payload;
@@ -368,7 +381,7 @@ export default function IntegrationsPage() {
         },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as IntegrationsApiResponse | SupportRecordErrorResponse;
+      const data = await readJsonResponse<IntegrationsApiResponse | SupportRecordErrorResponse>(response);
 
       if (!response.ok) {
         throw data;
@@ -397,7 +410,9 @@ export default function IntegrationsPage() {
         "error" in submitError &&
         typeof submitError.error === "string"
           ? submitError.error
-          : "Unable to save the support record.";
+          : submitError instanceof Error
+            ? submitError.message
+            : "Unable to save the support record.";
       setToastMessage(message);
       setToastOpen(true);
     } finally {
@@ -423,9 +438,10 @@ export default function IntegrationsPage() {
         },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as
+      const data = await readJsonResponse<
         | SupportRecordImportResponse
-        | SupportRecordErrorResponse;
+        | SupportRecordErrorResponse
+      >(response);
 
       if (!response.ok) {
         throw data;
@@ -466,7 +482,9 @@ export default function IntegrationsPage() {
         "error" in submitError &&
         typeof submitError.error === "string"
           ? submitError.error
-          : "Unable to import the CSV file.";
+          : submitError instanceof Error
+            ? submitError.message
+            : "Unable to import the CSV file.";
       setToastMessage(message);
       setToastOpen(true);
     } finally {

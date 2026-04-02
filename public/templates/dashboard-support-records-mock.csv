@@ -1,4 +1,4 @@
-﻿occurredAt,customer,channel,category,subject,status,priority,responseMinutes,notes
+occurredAt,customer,channel,category,subject,status,priority,responseMinutes,notes
 2026-03-24T08:12,Avery Johnson,Web Chat,Delivery,Package marked delivered but not received,Escalated,High,14,Carrier trace opened and supervisor notified
 2026-03-24T09:40,Mia Carter,Email,Returns,Return label link expired,Resolved,Medium,18,Fresh label issued and customer confirmed download
 2026-03-24T11:05,Noah Bennett,SMS,Billing,Invoice includes duplicate service fee,Open,High,23,Waiting on finance confirmation before adjustment

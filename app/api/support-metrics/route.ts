@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { buildSupportMetricsPayload } from "@/lib/support-records/metrics";
 import type {
   DashboardRange,
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     ? (categoryParam as SupportMetricsCategoryFilter)
     : "all";
 
-  const repository = new FileSupportRecordRepository();
+  const repository = getSupportRecordRepository();
   const records = await repository.listByUserId(currentUser.id);
   const payload: SupportMetricsApiResponse = buildSupportMetricsPayload({
     records,
@@ -68,3 +68,4 @@ export async function GET(request: NextRequest) {
 
   return jsonResponse(payload);
 }
+

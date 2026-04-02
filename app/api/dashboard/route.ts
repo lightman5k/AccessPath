@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { defaultInsightItems } from "@/lib/insights/default-insights";
 import { FileInsightActionRepository } from "@/lib/insights/file-insight-action-repository";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { buildSupportInsights } from "@/lib/support-records/insights";
 import {
   buildRecentSupportRecordActivity,
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
   const limit = parseLimit(limitParam);
   const [insightActions, supportRecords] = await Promise.all([
     new FileInsightActionRepository().listByUserId(currentUser.id),
-    new FileSupportRecordRepository().listByUserId(currentUser.id),
+    getSupportRecordRepository().listByUserId(currentUser.id),
   ]);
 
   const baseInsights = supportRecords.length > 0 ? buildSupportInsights(supportRecords) : defaultInsightItems;
@@ -231,3 +231,4 @@ export async function GET(request: NextRequest) {
     headers: buildApiNoStoreHeaders(),
   });
 }
+

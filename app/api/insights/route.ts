@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { defaultInsightItems } from "@/lib/insights/default-insights";
 import { FileInsightActionRepository } from "@/lib/insights/file-insight-action-repository";
-import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { getSupportRecordRepository } from "@/lib/support-records/default-repository";
 import { buildSupportInsights } from "@/lib/support-records/insights";
 import type {
   InsightAction,
@@ -85,7 +85,7 @@ function isValidInsightAction(value: unknown): value is InsightAction {
 
 async function buildInsightsPayload(userId: string) {
   const repository = new FileInsightActionRepository();
-  const supportRecordRepository = new FileSupportRecordRepository();
+  const supportRecordRepository = getSupportRecordRepository();
   const [actions, supportRecords] = await Promise.all([
     repository.listByUserId(userId),
     supportRecordRepository.listByUserId(userId),
@@ -155,3 +155,4 @@ export async function PATCH(request: NextRequest) {
 
   return jsonResponse(await buildInsightsPayload(currentUser.id));
 }
+

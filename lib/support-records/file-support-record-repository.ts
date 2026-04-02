@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { authConfig } from "@/lib/auth/config";
 import { mutateJsonFile, readJsonFile } from "@/lib/auth/file-store";
+import type { SupportRecordRepository } from "./repository";
 import type {
   StoredSupportRecord,
   SupportRecordInput,
@@ -10,7 +11,7 @@ import type {
 
 const defaultStoredSupportRecords: StoredSupportRecord[] = [];
 
-export class FileSupportRecordRepository {
+export class FileSupportRecordRepository implements SupportRecordRepository {
   constructor(private readonly filePath = authConfig.supportRecordsFilePath) {}
 
   async listByUserId(userId: string) {

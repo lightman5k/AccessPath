@@ -53,6 +53,7 @@ function parseCsvLine(line: string) {
 
 function splitCsvLines(csvText: string) {
   return csvText
+    .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map((line) => line.trim())
