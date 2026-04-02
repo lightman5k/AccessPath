@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileDiscussionRepository } from "@/lib/discussions/file-discussion-repository";
+import { getDiscussionRepository } from "@/lib/discussions/default-repository";
 import { buildDiscussionPayload } from "@/lib/discussions/service";
 import { validateDiscussionModeration } from "@/lib/discussions/validation";
 import type { DiscussionErrorResponse } from "@/types";
@@ -52,7 +52,7 @@ export async function PATCH(
   }
 
   try {
-    const repository = new FileDiscussionRepository();
+    const repository = getDiscussionRepository();
     const updatedThread = await repository.moderateThread(threadId, validation.data.action);
     if (!updatedThread) {
       return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
@@ -67,3 +67,4 @@ export async function PATCH(
     );
   }
 }
+

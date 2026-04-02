@@ -2,28 +2,25 @@
 import { authConfig } from "@/lib/auth/config";
 import { mutateJsonFile, readJsonFile } from "@/lib/auth/file-store";
 import type {
+  DiscussionVoteDirection,
+  StoredDiscussionVote,
+} from "@/types/discussion";
+import type { DiscussionRepository } from "./repository";
+import type { DiscussionAuthor } from "./repository";
+import { defaultDiscussionComments, defaultDiscussionThreads } from "./default-discussion-data";
+import type {
   DiscussionModerationAction,
   DiscussionTag,
   DiscussionThreadStatus,
-  DiscussionVoteDirection,
   StoredDiscussionComment,
   StoredDiscussionThread,
-  StoredDiscussionVote,
 } from "@/types/discussion";
-import { defaultDiscussionComments, defaultDiscussionThreads } from "./default-discussion-data";
 
 const defaultStoredThreads: StoredDiscussionThread[] = [];
 const defaultStoredComments: StoredDiscussionComment[] = [];
 const defaultStoredVotes: StoredDiscussionVote[] = [];
 
-type DiscussionAuthor = {
-  name: string;
-  role: string;
-  initials: string;
-  avatarClass: string;
-};
-
-export class FileDiscussionRepository {
+export class FileDiscussionRepository implements DiscussionRepository {
   constructor(
     private readonly threadsFilePath = authConfig.discussionThreadsFilePath,
     private readonly commentsFilePath = authConfig.discussionCommentsFilePath,

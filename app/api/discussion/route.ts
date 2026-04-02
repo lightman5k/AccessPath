@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileDiscussionRepository } from "@/lib/discussions/file-discussion-repository";
+import { getDiscussionRepository } from "@/lib/discussions/default-repository";
 import { buildDiscussionAuthor, buildDiscussionPayload } from "@/lib/discussions/service";
 import { validateCreateDiscussionThread } from "@/lib/discussions/validation";
 import type { DiscussionErrorResponse } from "@/types";
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const repository = new FileDiscussionRepository();
+    const repository = getDiscussionRepository();
     const author = buildDiscussionAuthor(currentUser);
     const createdThread = await repository.createThread({
       title: validation.data.title,
@@ -80,3 +80,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

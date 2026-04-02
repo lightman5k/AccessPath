@@ -7,7 +7,8 @@ import type {
   StoredDiscussionThread,
   StoredDiscussionVote,
 } from "@/types";
-import { FileDiscussionRepository } from "./file-discussion-repository";
+import { getDiscussionRepository } from "./default-repository";
+import type { DiscussionAuthor } from "./repository";
 
 function buildInitials(name: string) {
   return name
@@ -18,7 +19,9 @@ function buildInitials(name: string) {
     .toUpperCase();
 }
 
-export function buildDiscussionAuthor(user: Pick<PublicUser, "fullName" | "role">) {
+export function buildDiscussionAuthor(
+  user: Pick<PublicUser, "fullName" | "role">,
+): DiscussionAuthor {
   return {
     name: user.fullName,
     role: user.role === "admin" ? "Admin" : "Agent",
@@ -83,7 +86,7 @@ function buildDiscussionThread(
 }
 
 export async function buildDiscussionPayload(currentUserId: string, focusThreadId?: string): Promise<DiscussionApiResponse> {
-  const repository = new FileDiscussionRepository();
+  const repository = getDiscussionRepository();
   const [threads, comments, votes] = await Promise.all([
     repository.listThreads(),
     repository.listComments(),

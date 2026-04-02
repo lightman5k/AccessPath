@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileDiscussionRepository } from "@/lib/discussions/file-discussion-repository";
+import { getDiscussionRepository } from "@/lib/discussions/default-repository";
 import { buildDiscussionAuthor, buildDiscussionPayload } from "@/lib/discussions/service";
 import { validateCreateDiscussionComment } from "@/lib/discussions/validation";
 import type { DiscussionErrorResponse } from "@/types";
@@ -45,7 +45,7 @@ export async function POST(
   }
 
   try {
-    const repository = new FileDiscussionRepository();
+    const repository = getDiscussionRepository();
     const existingThread = await repository.findThreadById(threadId);
     if (!existingThread) {
       return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
@@ -66,3 +66,4 @@ export async function POST(
     return jsonResponse<DiscussionErrorResponse>({ error: "Unable to post the reply." }, 500);
   }
 }
+
