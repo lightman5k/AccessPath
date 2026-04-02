@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FileUserRepository } from "@/lib/auth/file-user-repository";
+import { getUserRepository } from "@/lib/auth/default-repositories";
 import type { MockPlan, MockRole } from "@/types";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ function isMockRole(value: unknown): value is MockRole {
 }
 
 export async function GET() {
-  const users = await new FileUserRepository().findAll();
+  const users = await getUserRepository().findAll();
   return NextResponse.json({ success: true, users });
 }
 
@@ -29,7 +29,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, error: "User ID is required." }, { status: 400 });
   }
 
-  await new FileUserRepository().deleteById(id);
+  await getUserRepository().deleteById(id);
   return NextResponse.json({ success: true });
 }
 
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const repo = new FileUserRepository();
+    const repo = getUserRepository();
     let user;
 
     if (typeof plan === "string" && plan.trim()) {
@@ -77,3 +77,4 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Unable to update user details." }, { status: 500 });
   }
 }
+

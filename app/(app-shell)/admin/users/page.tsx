@@ -2,10 +2,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { authConfig } from "@/lib/auth/config";
 import { authService } from "@/lib/auth/service";
-import { FileUserRepository } from "@/lib/auth/file-user-repository";
+import { getUserRepository } from "@/lib/auth/default-repositories";
 
 export default async function AdminUsersPage() {
-  const users = await new FileUserRepository().findAll();
+  const users = await getUserRepository().findAll();
 
   return (
     <div className="space-y-6">
@@ -47,3 +47,4 @@ export default async function AdminUsersPage() {
     </div>
   );
 }
+

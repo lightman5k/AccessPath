@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
-import { FileUserRepository } from "@/lib/auth/file-user-repository";
+import { getUserRepository } from "@/lib/auth/default-repositories";
+import type { UserRepository } from "@/lib/auth/user-repository";
 import {
   FileSettingsRepository,
   buildSettingsState,
@@ -37,7 +38,7 @@ function toAuditLogEntry(entry: StoredSettingsAuditLogEntry): SettingsAuditLogEn
 }
 
 async function ensureSettingsUser(
-  userRepository: FileUserRepository,
+  userRepository: UserRepository,
   currentUser: PublicUser,
 ): Promise<StoredUser> {
   const existingUser = await userRepository.findById(currentUser.id);
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     return jsonResponse<SettingsErrorResponse>({ error: "Authentication required." }, 401);
   }
 
-  const userRepository = new FileUserRepository();
+  const userRepository = getUserRepository();
   const settingsRepository = new FileSettingsRepository();
 
   const storedUser = await ensureSettingsUser(userRepository, currentUser);
@@ -119,7 +120,7 @@ export async function PATCH(request: NextRequest) {
     return jsonResponse<SettingsErrorResponse>(validation.error, 400);
   }
 
-  const userRepository = new FileUserRepository();
+  const userRepository = getUserRepository();
   const settingsRepository = new FileSettingsRepository();
   const existingUser = await ensureSettingsUser(userRepository, currentUser);
 
@@ -247,3 +248,5 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+

@@ -1,6 +1,5 @@
-import { FileSessionRepository } from "./file-session-repository";
-import { FileUserRepository } from "./file-user-repository";
 import { getSessionExpiresAt, getTrialEndsAt } from "./config";
+import { getSessionRepository, getUserRepository } from "./default-repositories";
 import { hashPassword, simulatePasswordVerification, verifyPassword } from "./password";
 import { createRecordId, createSessionToken, hashSessionToken } from "./tokens";
 import type { SessionRepository } from "./session-repository";
@@ -18,8 +17,8 @@ import type {
   ValidatedSignupInput,
 } from "./validation";
 
-const defaultUserRepository = new FileUserRepository();
-const defaultSessionRepository = new FileSessionRepository();
+const defaultUserRepository = getUserRepository();
+const defaultSessionRepository = getSessionRepository();
 
 type AuthenticatedSessionResult = {
   publicSession: PublicSession;

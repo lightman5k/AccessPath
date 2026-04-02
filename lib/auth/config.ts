@@ -33,6 +33,11 @@ function resolveConfiguredAuthSecret() {
   return configuredSecret || null;
 }
 
+function resolveConfiguredDatabaseUrl() {
+  const configuredDatabaseUrl = process.env.DATABASE_URL?.trim();
+  return configuredDatabaseUrl || null;
+}
+
 const dataDirectory = join(process.cwd(), "data", "auth");
 
 export const authConfig = {
@@ -48,6 +53,7 @@ export const authConfig = {
   trustProxyHeaders: parseBoolean(process.env.AUTH_TRUST_PROXY, false),
   trialDays: DEFAULT_TRIAL_DAYS,
   configuredSecret: resolveConfiguredAuthSecret(),
+  databaseUrl: resolveConfiguredDatabaseUrl(),
   usersFilePath: join(dataDirectory, "users.json"),
   sessionsFilePath: join(dataDirectory, "sessions.json"),
   insightActionsFilePath: join(dataDirectory, "insight-actions.json"),

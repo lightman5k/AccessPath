@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FileUserRepository } from "@/lib/auth/file-user-repository";
+import { getUserRepository } from "@/lib/auth/default-repositories";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,7 +10,8 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     return NextResponse.json({ success: false, error: "User ID is required." }, { status: 400 });
   }
 
-  await new FileUserRepository().deleteById(id);
+  await getUserRepository().deleteById(id);
 
   return NextResponse.json({ success: true });
 }
+

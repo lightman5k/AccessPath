@@ -39,7 +39,14 @@ npm run start
 
 ## Environment
 
-No environment variables are currently required for the demo. A sample env file is included as `.env.example` for future deployment configuration.
+For local demo mode, the app can still fall back to JSON-backed storage.
+
+For deployed auth, set:
+
+- `AUTH_SECRET`
+- `DATABASE_URL`
+
+A sample env file is included as `.env.example`.
 
 ## Demo Guide
 
