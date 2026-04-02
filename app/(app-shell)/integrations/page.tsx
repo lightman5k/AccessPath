@@ -753,9 +753,10 @@ export default function IntegrationsPage() {
         }
         onClose={() => setManualEntryOpen(false)}
         open={manualEntryOpen}
+        size="lg"
         title={manualMode === "record" ? "Manual Support Record" : "Import Support Records"}
       >
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="flex gap-2">
             <button
               className={`rounded-md border px-3 py-2 text-sm transition ${
@@ -984,9 +985,9 @@ export default function IntegrationsPage() {
                 Import support records in bulk with the app template. The CSV is validated before any records are written.
               </p>
 
-              <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-4">
+              <div className="min-w-0 rounded-xl border border-sky-200 bg-sky-50/70 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-sky-950">CSV Template Guide</p>
                     <p className="mt-1 text-xs leading-5 text-sky-900">
                       Use one header row, keep the column names exactly as shown, and quote any subject or notes fields that contain commas.
@@ -1011,8 +1012,8 @@ export default function IntegrationsPage() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-sky-100 bg-white/80 p-3">
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <div className="min-w-0 rounded-lg border border-sky-100 bg-white/80 p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
                         Allowed Values
                       </p>
@@ -1024,7 +1025,7 @@ export default function IntegrationsPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-sky-100 bg-white/80 p-3">
+                    <div className="min-w-0 rounded-lg border border-sky-100 bg-white/80 p-3">
                       <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
                         Format Notes
                       </p>
@@ -1040,7 +1041,7 @@ export default function IntegrationsPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
                       Sample CSV
                     </p>
-                    <pre className="mt-2 overflow-x-auto rounded-lg border border-sky-100 bg-slate-950 p-3 text-xs leading-6 text-sky-100">
+                    <pre className="mt-2 max-w-full overflow-x-auto rounded-lg border border-sky-100 bg-slate-950 p-3 text-xs leading-6 text-sky-100">
                       <code>{buildCsvTemplate()}</code>
                     </pre>
                   </div>
@@ -1082,11 +1083,11 @@ export default function IntegrationsPage() {
               </div>
 
               {csvPreviewLines.length > 0 ? (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="min-w-0 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
                     Loaded Preview
                   </p>
-                  <pre className="mt-2 overflow-x-auto text-xs leading-6 text-gray-700">
+                  <pre className="mt-2 max-w-full overflow-x-auto text-xs leading-6 text-gray-700">
                     <code>{csvPreviewLines.join("\n")}</code>
                   </pre>
                 </div>

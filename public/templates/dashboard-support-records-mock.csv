@@ -1,0 +1,33 @@
+﻿occurredAt,customer,channel,category,subject,status,priority,responseMinutes,notes
+2026-03-24T08:12,Avery Johnson,Web Chat,Delivery,Package marked delivered but not received,Escalated,High,14,Carrier trace opened and supervisor notified
+2026-03-24T09:40,Mia Carter,Email,Returns,Return label link expired,Resolved,Medium,18,Fresh label issued and customer confirmed download
+2026-03-24T11:05,Noah Bennett,SMS,Billing,Invoice includes duplicate service fee,Open,High,23,Waiting on finance confirmation before adjustment
+2026-03-24T13:30,Harper Lewis,Web Chat,Account,Password reset email never arrived,Resolved,Medium,7,Customer signed in after email typo was corrected
+2026-03-25T08:05,Elijah Ross,Email,Delivery,Tracking has not updated in five days,Open,High,28,Carrier escalation requested for stalled scan
+2026-03-25T09:15,Sophia Nguyen,Web Chat,Returns,Refund still pending after warehouse receipt,In Progress,Medium,16,Warehouse receipt confirmed and refund queued
+2026-03-25T10:50,Lucas Diaz,SMS,Billing,Promo discount missing from renewal,Resolved,Low,9,Manual credit applied and invoice corrected
+2026-03-25T14:22,Charlotte Reed,Email,Delivery,Wrong item delivered to customer,Escalated,High,19,Replacement order approved with expedited shipping
+2026-03-26T07:55,James Cooper,Web Chat,Account,Two-factor code never arrives,Open,High,11,Backup verification offered while identity review continues
+2026-03-26T09:48,Amelia Brooks,Email,Returns,Need exception outside return window,In Progress,Medium,26,Support requested manager approval for exception
+2026-03-26T12:10,Benjamin Price,SMS,Delivery,Signature required but courier never attempted,Open,High,31,Courier complaint filed and customer requested callback
+2026-03-26T15:34,Evelyn Flores,Web Chat,Billing,Charged twice after failed checkout retry,Escalated,High,13,Billing ops reviewing duplicate authorization
+2026-03-27T08:18,Henry Foster,Email,Delivery,Order still not shipped after promised date,Open,High,34,Fulfillment team asked for priority stock check
+2026-03-27T09:42,Abigail Ward,Web Chat,Account,Cannot update primary email address,Resolved,Medium,8,Agent updated profile after security verification
+2026-03-27T11:06,Daniel Cox,SMS,Billing,Tax amount does not match quote,In Progress,Medium,21,Finance reviewing tax region mapping
+2026-03-27T16:20,Emily Sanders,Email,Returns,Return package delivered but refund absent,Escalated,High,17,Refund team asked to confirm receiving batch
+2026-03-28T08:07,Michael Jenkins,Web Chat,Delivery,Order delayed after overnight shipping paid,Escalated,High,15,Shipping surcharge refund proposed to customer
+2026-03-28T09:36,Scarlett Hughes,Email,Delivery,Tracking number shows no carrier movement,Open,High,29,Support waiting on carrier exception scan
+2026-03-28T11:58,Matthew Perry,SMS,Account,Account locked after repeated login attempts,Resolved,Medium,10,Customer restored access after identity verification
+2026-03-28T14:11,Victoria Long,Web Chat,Returns,Received damaged item and wants replacement,In Progress,High,12,Damage photos collected and replacement review started
+2026-03-29T08:03,Samuel Murphy,Email,Billing,Subscription renewed on canceled workspace,Escalated,High,18,Retention history sent to billing lead for reversal
+2026-03-29T09:24,Grace Patterson,Web Chat,Delivery,Carrier says delivered to wrong address,Open,High,24,Address mismatch under investigation with carrier
+2026-03-29T10:47,Joseph Kelly,SMS,Returns,Customer wants partial refund instead of return,Resolved,Low,11,Partial credit approved under goodwill policy
+2026-03-29T15:20,Hannah Russell,Email,Delivery,Replacement order also delayed in transit,Open,High,33,Second escalation opened because repeat shipment slipped
+2026-03-30T07:52,David Simmons,Web Chat,Delivery,Package delayed and customer leaving for trip,Escalated,High,12,Expedited intercept requested before travel deadline
+2026-03-30T09:18,Lily Barnes,Email,Billing,Invoice PDF unavailable in account portal,Resolved,Low,6,New invoice link sent and portal cache cleared
+2026-03-30T10:59,Gabriel Coleman,SMS,Account,Customer cannot pass verification challenge,In Progress,Medium,20,Manual review requested from security team
+2026-03-30T13:40,Zoe Bryant,Web Chat,Returns,Return pickup missed scheduled window,Open,Medium,22,Carrier pickup rescheduled for next business day
+2026-03-31T08:10,Anthony Powell,Email,Delivery,Three orders delayed in the same shipment batch,Escalated,High,16,Operations flagged batch issue for fulfillment review
+2026-03-31T09:44,Nora Griffin,Web Chat,Delivery,Order shows exception due to weather event,Open,Medium,25,Support provided proactive delay guidance
+2026-03-31T11:15,Andrew Hayes,SMS,Billing,Refund promised but not visible on card,In Progress,High,14,Billing awaiting processor settlement confirmation
+2026-03-31T14:28,Leah Foster,Email,Returns,Customer mailed return without label guidance,Resolved,Medium,17,Return manually associated to original order

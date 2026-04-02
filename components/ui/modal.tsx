@@ -8,9 +8,23 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  size?: "md" | "lg" | "xl";
 };
 
-export function Modal({ open, title, onClose, children, footer }: ModalProps) {
+const sizeClassNames: Record<NonNullable<ModalProps["size"]>, string> = {
+  md: "max-w-md",
+  lg: "max-w-2xl",
+  xl: "max-w-4xl",
+};
+
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  size = "md",
+}: ModalProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -40,7 +54,7 @@ export function Modal({ open, title, onClose, children, footer }: ModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center sm:p-6">
       <button
         aria-label="Close modal"
         className="absolute inset-0 bg-black/30"
@@ -50,17 +64,17 @@ export function Modal({ open, title, onClose, children, footer }: ModalProps) {
       <section
         aria-labelledby="modal-title"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-lg border border-gray-200 bg-white p-4 shadow-lg"
+        className={`relative my-auto flex w-full min-h-0 max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white p-4 shadow-lg sm:max-h-[calc(100vh-3rem)] ${sizeClassNames[size]}`}
         ref={dialogRef}
         role="dialog"
       >
-        <header className="mb-3">
+        <header className="mb-3 shrink-0">
           <h2 className="text-lg font-semibold" id="modal-title">
             {title}
           </h2>
         </header>
-        <div>{children}</div>
-        {footer ? <footer className="mt-4 flex justify-end gap-2">{footer}</footer> : null}
+        <div className="min-h-0 overflow-y-auto pr-1">{children}</div>
+        {footer ? <footer className="mt-4 flex shrink-0 justify-end gap-2">{footer}</footer> : null}
       </section>
     </div>
   );
