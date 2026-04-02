@@ -30,29 +30,22 @@ export class FileDiscussionRepository {
     private readonly votesFilePath = authConfig.discussionVotesFilePath,
   ) {}
 
-  private async ensureSeedData() {
-    const [threads, comments] = await Promise.all([
-      readJsonFile(this.threadsFilePath, defaultStoredThreads),
-      readJsonFile(this.commentsFilePath, defaultStoredComments),
-    ]);
+  private getThreadBaseline(currentItems: StoredDiscussionThread[]) {
+    return currentItems.length > 0 ? currentItems : defaultDiscussionThreads;
+  }
 
-    if (threads.length === 0) {
-      await mutateJsonFile(this.threadsFilePath, defaultStoredThreads, () => defaultDiscussionThreads);
-    }
-
-    if (comments.length === 0) {
-      await mutateJsonFile(this.commentsFilePath, defaultStoredComments, () => defaultDiscussionComments);
-    }
+  private getCommentBaseline(currentItems: StoredDiscussionComment[]) {
+    return currentItems.length > 0 ? currentItems : defaultDiscussionComments;
   }
 
   async listThreads() {
-    await this.ensureSeedData();
-    return readJsonFile(this.threadsFilePath, defaultStoredThreads);
+    const threads = await readJsonFile(this.threadsFilePath, defaultStoredThreads);
+    return this.getThreadBaseline(threads);
   }
 
   async listComments() {
-    await this.ensureSeedData();
-    return readJsonFile(this.commentsFilePath, defaultStoredComments);
+    const comments = await readJsonFile(this.commentsFilePath, defaultStoredComments);
+    return this.getCommentBaseline(comments);
   }
 
   async listVotes() {
@@ -93,12 +86,14 @@ export class FileDiscussionRepository {
       baseVoteCount: 0,
     };
 
-    await mutateJsonFile(this.threadsFilePath, defaultStoredThreads, (currentItems) => [thread, ...currentItems]);
+    await mutateJsonFile(this.threadsFilePath, defaultStoredThreads, (currentItems) => [
+      thread,
+      ...this.getThreadBaseline(currentItems),
+    ]);
     return thread;
   }
 
   async createComment(threadId: string, input: { body: string; author: DiscussionAuthor }) {
-    await this.ensureSeedData();
     const existingThread = await this.findThreadById(threadId);
     if (!existingThread) {
       throw new Error("DISCUSSION_THREAD_NOT_FOUND");
@@ -121,12 +116,12 @@ export class FileDiscussionRepository {
     };
 
     await mutateJsonFile(this.commentsFilePath, defaultStoredComments, (currentItems) => [
-      ...currentItems,
+      ...this.getCommentBaseline(currentItems),
       comment,
     ]);
 
     await mutateJsonFile(this.threadsFilePath, defaultStoredThreads, (currentItems) =>
-      currentItems.map((thread) =>
+      this.getThreadBaseline(currentItems).map((thread) =>
         thread.id === threadId
           ? {
               ...thread,
@@ -145,9 +140,10 @@ export class FileDiscussionRepository {
     const nowIso = new Date().toISOString();
 
     await mutateJsonFile(this.threadsFilePath, defaultStoredThreads, (currentItems) => {
-      const existingThread = currentItems.find((thread) => thread.id === threadId);
+      const baselineItems = this.getThreadBaseline(currentItems);
+      const existingThread = baselineItems.find((thread) => thread.id === threadId);
       if (!existingThread) {
-        return currentItems;
+        return baselineItems;
       }
 
       updatedThread = {
@@ -163,7 +159,7 @@ export class FileDiscussionRepository {
         updatedAt: nowIso,
       };
 
-      return currentItems.map((thread) => (thread.id === threadId ? updatedThread! : thread));
+      return baselineItems.map((thread) => (thread.id === threadId ? updatedThread! : thread));
     });
 
     return updatedThread;

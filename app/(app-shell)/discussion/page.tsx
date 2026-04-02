@@ -51,6 +51,20 @@ function scoreThread(thread: DiscussionThread) {
   return thread.voteCount * 3 + thread.replyCount * 2 + (thread.pinned ? 8 : 0);
 }
 
+async function readDiscussionResponse<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error("The server returned an empty response.");
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("The server returned an invalid response.");
+  }
+}
+
+
 export default function DiscussionPage() {
   const { session } = useAuthSession();
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
@@ -97,7 +111,7 @@ export default function DiscussionPage() {
           cache: "no-store",
           signal: controller.signal,
         });
-        const payload = (await response.json()) as DiscussionApiResponse | DiscussionErrorResponse;
+        const payload = await readDiscussionResponse<DiscussionApiResponse | DiscussionErrorResponse>(response);
 
         if (!response.ok || !("items" in payload)) {
           throw new Error("error" in payload ? payload.error : "Unable to load discussion threads.");
@@ -205,7 +219,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify(requestBody),
       });
-      const payload = (await response.json()) as DiscussionApiResponse | DiscussionErrorResponse;
+      const payload = await readDiscussionResponse<DiscussionApiResponse | DiscussionErrorResponse>(response);
 
       if (!response.ok || !("items" in payload)) {
         const errorPayload = payload as DiscussionErrorResponse;
@@ -251,7 +265,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify(requestBody),
       });
-      const payload = (await response.json()) as DiscussionApiResponse | DiscussionErrorResponse;
+      const payload = await readDiscussionResponse<DiscussionApiResponse | DiscussionErrorResponse>(response);
 
       if (!response.ok || !("items" in payload)) {
         const errorPayload = payload as DiscussionErrorResponse;
@@ -281,7 +295,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify({ action }),
       });
-      const payload = (await response.json()) as DiscussionApiResponse | DiscussionErrorResponse;
+      const payload = await readDiscussionResponse<DiscussionApiResponse | DiscussionErrorResponse>(response);
 
       if (!response.ok || !("items" in payload)) {
         openToast((payload as DiscussionErrorResponse).error);
@@ -309,7 +323,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify(requestBody),
       });
-      const payload = (await response.json()) as DiscussionApiResponse | DiscussionErrorResponse;
+      const payload = await readDiscussionResponse<DiscussionApiResponse | DiscussionErrorResponse>(response);
 
       if (!response.ok || !("items" in payload)) {
         openToast((payload as DiscussionErrorResponse).error);
@@ -693,6 +707,8 @@ export default function DiscussionPage() {
     </>
   );
 }
+
+
 
 
 

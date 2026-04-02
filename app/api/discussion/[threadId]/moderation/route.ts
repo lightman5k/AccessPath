@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { FileDiscussionRepository } from "@/lib/discussions/file-discussion-repository";
 import { buildDiscussionPayload } from "@/lib/discussions/service";
@@ -28,7 +28,10 @@ export async function PATCH(
   }
 
   if (currentUser.role !== "admin") {
-    return jsonResponse<DiscussionErrorResponse>({ error: "Only admins can moderate discussion threads." }, 403);
+    return jsonResponse<DiscussionErrorResponse>(
+      { error: "Only admins can moderate discussion threads." },
+      403,
+    );
   }
 
   const { threadId } = await context.params;
@@ -48,11 +51,19 @@ export async function PATCH(
     return jsonResponse<DiscussionErrorResponse>(validation.error, 400);
   }
 
-  const repository = new FileDiscussionRepository();
-  const updatedThread = await repository.moderateThread(threadId, validation.data.action);
-  if (!updatedThread) {
-    return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
-  }
+  try {
+    const repository = new FileDiscussionRepository();
+    const updatedThread = await repository.moderateThread(threadId, validation.data.action);
+    if (!updatedThread) {
+      return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
+    }
 
-  return jsonResponse(await buildDiscussionPayload(currentUser.id, threadId));
+    return jsonResponse(await buildDiscussionPayload(currentUser.id, threadId));
+  } catch (error) {
+    console.error("Discussion moderation PATCH failed.", error);
+    return jsonResponse<DiscussionErrorResponse>(
+      { error: "Unable to update the discussion thread." },
+      500,
+    );
+  }
 }

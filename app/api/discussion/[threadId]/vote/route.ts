@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
 import { FileDiscussionRepository } from "@/lib/discussions/file-discussion-repository";
 import { buildDiscussionPayload } from "@/lib/discussions/service";
@@ -44,13 +44,18 @@ export async function PATCH(
     return jsonResponse<DiscussionErrorResponse>(validation.error, 400);
   }
 
-  const repository = new FileDiscussionRepository();
-  const existingThread = await repository.findThreadById(threadId);
-  if (!existingThread) {
-    return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
+  try {
+    const repository = new FileDiscussionRepository();
+    const existingThread = await repository.findThreadById(threadId);
+    if (!existingThread) {
+      return jsonResponse<DiscussionErrorResponse>({ error: "Discussion thread not found." }, 404);
+    }
+
+    await repository.setVote(currentUser.id, threadId, validation.data.direction);
+
+    return jsonResponse(await buildDiscussionPayload(currentUser.id, threadId));
+  } catch (error) {
+    console.error("Discussion vote PATCH failed.", error);
+    return jsonResponse<DiscussionErrorResponse>({ error: "Unable to update the vote." }, 500);
   }
-
-  await repository.setVote(currentUser.id, threadId, validation.data.direction);
-
-  return jsonResponse(await buildDiscussionPayload(currentUser.id, threadId));
 }
