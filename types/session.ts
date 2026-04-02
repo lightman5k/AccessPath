@@ -9,6 +9,5 @@ export type MockSession = {
 
 export type FeatureKey =
   | "workflowBuilder"
-  | "pdfExport"
   | "salesforceIntegration"
   | "settingsAccess";

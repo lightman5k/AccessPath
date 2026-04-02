@@ -1,0 +1,13 @@
+occurredAt,customer,channel,category,subject,status,priority,responseMinutes,notes
+2026-03-20T09:15,Jane Doe,Web Chat,Delivery,Package still not delivered,Open,High,18.5,Customer asked for an updated ETA
+2026-03-20T10:40,Marco Alvarez,Email,Returns,Return label never arrived,In Progress,Medium,42,Agent resent the label and confirmed address
+2026-03-21T08:05,Tina Brooks,SMS,Billing,Charged twice for March renewal,Escalated,High,12.5,Escalated to billing operations for refund review
+2026-03-21T11:20,Raj Patel,Web Chat,Account,Cannot reset password,Resolved,Medium,6,Guided the customer through password reset successfully
+2026-03-22T13:10,Olivia Chen,Email,Delivery,Tracking has not updated in four days,Open,High,27,Waiting on carrier scan confirmation
+2026-03-22T14:55,Chris Walker,Web Chat,Returns,Refund still pending after item received,Resolved,Medium,15,Refund released after warehouse confirmation
+2026-03-23T09:30,Nina Gomez,SMS,Account,Two factor code never arrives,In Progress,High,9,Support suggested backup verification path
+2026-03-23T16:45,Ben Foster,Email,Billing,Invoice total does not match quote,Escalated,High,31,Finance team asked to review tax and discount lines
+2026-03-24T10:10,Sarah Kim,Web Chat,Delivery,Wrong item delivered,Resolved,High,11,Replacement order created and confirmed with customer
+2026-03-24T15:20,David Reed,Email,Returns,Need return window exception,Open,Medium,36,Customer provided photos and purchase date
+2026-03-25T08:50,Amanda Price,SMS,Delivery,Order marked delivered but missing,Escalated,High,14,Carrier claim started and supervisor notified
+2026-03-25T12:35,Leo Martin,Web Chat,Billing,Promo code failed during checkout,Resolved,Low,7,Applied manual adjustment and completed checkout

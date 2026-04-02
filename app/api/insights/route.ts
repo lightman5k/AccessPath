@@ -1,84 +1,157 @@
-import { NextResponse } from "next/server";
-import type { InsightItem, InsightsApiResponse } from "@/types";
+import { NextRequest, NextResponse } from "next/server";
+import { buildApiNoStoreHeaders, requireApiSession } from "@/lib/auth/api-guard";
+import { defaultInsightItems } from "@/lib/insights/default-insights";
+import { FileInsightActionRepository } from "@/lib/insights/file-insight-action-repository";
+import { FileSupportRecordRepository } from "@/lib/support-records/file-support-record-repository";
+import { buildSupportInsights } from "@/lib/support-records/insights";
+import type {
+  InsightAction,
+  InsightItem,
+  InsightsApiResponse,
+  InsightsErrorResponse,
+  StoredInsightActionState,
+  UpdateInsightRequest,
+} from "@/types";
 
-const insightItems: InsightItem[] = [
-  {
-    id: "delay-cluster",
-    title: "Shipping delay conversations should trigger a proactive recovery workflow",
-    category: "Support",
-    priority: "high",
-    confidence: 0.94,
-    recommendation:
-      "Update the assistant to acknowledge delay frustration earlier, provide ETA context in the first response, and route refund-risk conversations after the second negative reply.",
-    reason:
-      "The model detected a rise in delay-related dissatisfaction, repeat order-status contacts, and refund intent after extended back-and-forth exchanges.",
-    estimatedTimeSaved: "6.5 hrs/week",
-    automationOpportunity: true,
-    status: "ready",
-  },
-  {
-    id: "refund-faq-gap",
-    title: "Expand refund timeline guidance in the knowledge base",
-    category: "Knowledge",
-    priority: "medium",
-    confidence: 0.88,
-    recommendation:
-      "Add FAQ coverage for refund timing after item receipt and clarify exception cases for expedited shipping and damaged goods.",
-    reason:
-      "The assistant is resolving policy eligibility correctly but confidence drops when customers ask about processing times and reimbursement timing.",
-    estimatedTimeSaved: "3.2 hrs/week",
-    automationOpportunity: true,
-    status: "new",
-  },
-  {
-    id: "sync-health",
-    title: "Escalate stale order data when integration sync health degrades",
-    category: "Operations",
-    priority: "high",
-    confidence: 0.91,
-    recommendation:
-      "Add a safeguard that suppresses delivery promises and flags the conversation for human review when the storefront sync falls behind expected refresh intervals.",
-    reason:
-      "A recent sync lag is causing delivery updates to age out, increasing the risk of inaccurate order-status responses and repeat contacts.",
-    estimatedTimeSaved: "4.8 hrs/week",
-    automationOpportunity: false,
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function jsonResponse<T>(body: T, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: buildApiNoStoreHeaders(),
+  });
+}
+
+function mergeInsightsWithActions(
+  items: InsightItem[],
+  actions: StoredInsightActionState[],
+): InsightItem[] {
+  const actionsByInsightId = new Map(actions.map((item) => [item.insightId, item]));
+
+  return items.map((item) => {
+    const action = actionsByInsightId.get(item.id);
+    if (!action) return item;
+
+    return {
+      ...item,
+      status: action.status,
+      decision: action.decision,
+      decisionUpdatedAt: action.updatedAt,
+    };
+  });
+}
+
+function applyInsightAction(item: InsightItem, action: InsightAction): InsightItem {
+  const nowIso = new Date().toISOString();
+
+  if (action === "review") {
+    return {
+      ...item,
+      status: "in-review",
+      decision: "pending",
+      decisionUpdatedAt: nowIso,
+    };
+  }
+
+  if (action === "apply") {
+    return {
+      ...item,
+      status: "ready",
+      decision: "applied",
+      decisionUpdatedAt: nowIso,
+    };
+  }
+
+  if (action === "dismiss") {
+    return {
+      ...item,
+      decision: "dismissed",
+      decisionUpdatedAt: nowIso,
+    };
+  }
+
+  return {
+    ...item,
     status: "in-review",
-  },
-  {
-    id: "account-security-routing",
-    title: "Route account and security requests to humans earlier",
-    category: "Support",
-    priority: "medium",
-    confidence: 0.82,
-    recommendation:
-      "Add a rule that triggers handoff when customers mention password resets, unauthorized access, or profile ownership disputes.",
-    reason:
-      "These conversations show lower resolution confidence and carry higher risk if fully handled by automation.",
-    estimatedTimeSaved: "2.1 hrs/week",
-    automationOpportunity: false,
-    status: "ready",
-  },
-  {
-    id: "macro-replies",
-    title: "Promote repeated approved responses into reusable automations",
-    category: "Automation",
-    priority: "low",
-    confidence: 0.79,
-    recommendation:
-      "Convert the most repeated agent-authored shipping and returns replies into assistant-ready response patterns with approval checkpoints.",
-    reason:
-      "Agents are manually repeating the same approved responses across common scenarios, indicating low-risk automation potential.",
-    estimatedTimeSaved: "5.4 hrs/week",
-    automationOpportunity: true,
-    status: "new",
-  },
-];
+    decision: "escalated",
+    decisionUpdatedAt: nowIso,
+  };
+}
 
-export async function GET() {
+function isValidInsightAction(value: unknown): value is InsightAction {
+  return value === "review" || value === "apply" || value === "dismiss" || value === "escalate";
+}
+
+async function buildInsightsPayload(userId: string) {
+  const repository = new FileInsightActionRepository();
+  const supportRecordRepository = new FileSupportRecordRepository();
+  const [actions, supportRecords] = await Promise.all([
+    repository.listByUserId(userId),
+    supportRecordRepository.listByUserId(userId),
+  ]);
+  const sourceItems = supportRecords.length > 0 ? buildSupportInsights(supportRecords) : defaultInsightItems;
+
   const payload: InsightsApiResponse = {
     generatedAt: new Date().toISOString(),
-    items: insightItems,
+    items: mergeInsightsWithActions(sourceItems, actions),
   };
 
-  return NextResponse.json(payload);
+  return payload;
+}
+
+export async function GET(request: NextRequest) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+
+  const currentUser = auth.session.user;
+  if (!currentUser) {
+    return jsonResponse<InsightsErrorResponse>({ error: "Authentication required." }, 401);
+  }
+
+  return jsonResponse(await buildInsightsPayload(currentUser.id));
+}
+
+export async function PATCH(request: NextRequest) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+
+  const currentUser = auth.session.user;
+  if (!currentUser) {
+    return jsonResponse<InsightsErrorResponse>({ error: "Authentication required." }, 401);
+  }
+
+  let body: UpdateInsightRequest | null = null;
+
+  try {
+    body = (await request.json()) as UpdateInsightRequest;
+  } catch {
+    return jsonResponse<InsightsErrorResponse>({ error: "Invalid JSON body." }, 400);
+  }
+
+  if (!body?.insightId || typeof body.insightId !== "string") {
+    return jsonResponse<InsightsErrorResponse>({ error: "Insight ID is required." }, 400);
+  }
+
+  if (!isValidInsightAction(body.action)) {
+    return jsonResponse<InsightsErrorResponse>({ error: "A valid insight action is required." }, 400);
+  }
+
+  const currentPayload = await buildInsightsPayload(currentUser.id);
+  const insight = currentPayload.items.find((item) => item.id === body?.insightId);
+  if (!insight) {
+    return jsonResponse<InsightsErrorResponse>({ error: "Insight not found." }, 404);
+  }
+
+  const nextInsight = applyInsightAction(insight, body.action);
+  const repository = new FileInsightActionRepository();
+  await repository.upsert({
+    userId: currentUser.id,
+    insightId: nextInsight.id,
+    status: nextInsight.status,
+    decision: nextInsight.decision,
+    updatedAt: nextInsight.decisionUpdatedAt ?? new Date().toISOString(),
+  });
+
+  return jsonResponse(await buildInsightsPayload(currentUser.id));
 }

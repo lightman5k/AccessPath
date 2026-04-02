@@ -1,5 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  buildApiErrorResponse,
+  buildApiNoStoreHeaders,
+  requireApiSession,
+} from "@/lib/auth/api-guard";
 import type { ScheduleRequest, ScheduleResponse, ScheduleSlot } from "@/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const defaultTimezone = "America/Chicago";
 const defaultDurationMinutes = 30;
@@ -85,18 +93,33 @@ function matchesMessageHints(slot: ScheduleSlot, message: string) {
   return true;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await requireApiSession(request);
+  if (!auth.ok) return auth.response;
+
   let body: ScheduleRequest;
 
   try {
     body = (await request.json()) as ScheduleRequest;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+    return buildApiErrorResponse(
+      {
+        error: "Invalid JSON body.",
+        code: "invalid_request",
+      },
+      400,
+    );
   }
 
   const message = body.message?.trim();
   if (!message) {
-    return NextResponse.json({ error: "A scheduling message is required." }, { status: 400 });
+    return buildApiErrorResponse(
+      {
+        error: "A scheduling message is required.",
+        code: "invalid_request",
+      },
+      400,
+    );
   }
 
   const timezone = body.timezone?.trim() || defaultTimezone;
@@ -124,5 +147,7 @@ export async function POST(request: Request) {
         : "Ask whether the customer prefers a different day or time window.",
   };
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, {
+    headers: buildApiNoStoreHeaders(),
+  });
 }

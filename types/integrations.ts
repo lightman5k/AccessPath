@@ -1,4 +1,11 @@
-export type IntegrationId = "shopify" | "salesforce" | "quickbooks" | "google-drive";
+import type { SupportRecordSourceSummary } from "./support-records";
+
+export type IntegrationId =
+  | "shopify"
+  | "salesforce"
+  | "quickbooks"
+  | "google-drive"
+  | "manual-entry";
 
 export type IntegrationStatus = "connected" | "not-connected" | "syncing" | "error";
 
@@ -11,3 +18,13 @@ export type IntegrationItem = {
 };
 
 export type IntegrationCatalogItem = Omit<IntegrationItem, "status" | "lastSyncAt">;
+
+export type StoredIntegrationState = {
+  userId: string;
+  integrationId: IntegrationId;
+  status: IntegrationStatus;
+  lastSyncAt?: string;
+  updatedAt: string;
+};
+
+export type IntegrationManualSourceSummary = SupportRecordSourceSummary;

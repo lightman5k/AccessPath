@@ -2,15 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Card, EmptyState, Modal, Toast } from "@/components/ui";
+import { featureRequirements, hasFeatureAccess } from "@/lib/auth/feature-access";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { clearStoredWorkflow, readStoredWorkflow, writeStoredWorkflow } from "@/lib";
 import {
   demoDataResetEvent,
-  featureRequirements,
-  hasFeatureAccess,
   mockWorkflowTemplate,
   mockWorkflowTemplates,
-  saveMockSession,
-  useMockSession,
 } from "@/lib/mock";
 import type { Workflow, WorkflowNode, WorkflowNodeType } from "@/types";
 
@@ -220,7 +218,7 @@ function NodeGlyph({ type }: { type: WorkflowNodeType }) {
 }
 
 export default function WorkflowBuilderPage() {
-  const session = useMockSession();
+  const { session } = useAuthSession();
   const [workflowId, setWorkflowId] = useState(referenceWorkflow.id);
   const [workflowName, setWorkflowName] = useState(referenceWorkflow.name);
   const [workflowDescription, setWorkflowDescription] = useState(referenceWorkflow.description ?? "");
@@ -376,13 +374,12 @@ export default function WorkflowBuilderPage() {
           <button
             className="mt-6 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2"
             onClick={() => {
-              saveMockSession({ ...session, plan: "pro" });
-              setToastMessage("Mock plan switched to pro.");
+              setToastMessage("Workflow Builder access is managed by your signed-in workspace plan.");
               setToastOpen(true);
             }}
             type="button"
           >
-            Upgrade to Pro
+            Pro plan required
           </button>
         </Card>
       </div>

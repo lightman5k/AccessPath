@@ -454,9 +454,9 @@ export default function LoginPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               className="rounded-xl bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#17181f]"
-              href="/dashboard"
+              href="/login/signup"
             >
-              Start Free Trial
+              Sign Up
             </Link>
             <Link
               className="rounded-xl border border-white/15 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#17181f]"

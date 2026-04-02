@@ -23,3 +23,10 @@ export type DashboardAiRecommendation = {
   impact: "Low" | "Medium" | "High";
   category: string;
 };
+
+export type DashboardSummaryCard = {
+  id: string;
+  label: string;
+  value: string;
+  helperText: string;
+};

@@ -1,5 +1,17 @@
-export type { DashboardAiRecommendation, DashboardInteraction, DashboardKpi } from "./dashboard";
+﻿export type {
+  DashboardAiRecommendation,
+  DashboardInteraction,
+  DashboardKpi,
+  DashboardSummaryCard,
+} from "./dashboard";
 export type {
+  AuthErrorCode,
+  AuthErrorField,
+  AuthErrorResponse,
+  AuthSessionResponse,
+  AuthSigninRequest,
+  AuthSignoutResponse,
+  AuthSignupRequest,
   ChatIntent,
   ChatMessageTurn,
   ChatRequest,
@@ -9,13 +21,39 @@ export type {
   DashboardTrendPoint,
   IntegrationAction,
   IntegrationApiItem,
+  IntegrationErrorResponse,
+  IntegrationMutationAction,
   IntegrationsApiResponse,
   IntegrationSyncState,
+  CreateSupportRecordRequest,
+  CreateDiscussionCommentRequest,
+  CreateDiscussionThreadRequest,
+  DiscussionApiResponse,
+  DiscussionErrorResponse,
+  ImportSupportRecordsRequest,
   InsightCategory,
+  InsightDecision,
   InsightItem,
   InsightPriority,
   InsightStatus,
   InsightsApiResponse,
+  InsightAction,
+  InsightsErrorResponse,
+  StoredInsightActionState,
+  UpdateInsightRequest,
+  UpdateDiscussionVoteRequest,
+  UpdateIntegrationRequest,
+  SupportMetricsApiResponse,
+  SupportMetricsBreakdownItem,
+  SupportMetricsCategoryFilter,
+  SupportMetricsChannelFilter,
+  SupportMetricsSnapshot,
+  SupportMetricsSnapshotStatus,
+  SupportMetricsSummary,
+  SupportMetricsTrendPoint,
+  SupportRecordErrorResponse,
+  SupportRecordImportResponse,
+  SupportRecordsApiResponse,
   ScheduleRequest,
   ScheduleResponse,
   ScheduleSlot,
@@ -44,12 +82,36 @@ export type {
   WorkflowNodeType,
 } from "./workflow";
 export type {
+  DiscussionComment,
+  DiscussionTag,
+  DiscussionThread,
+  DiscussionThreadStatus,
+  DiscussionVoteDirection,
+  StoredDiscussionComment,
+  StoredDiscussionThread,
+  StoredDiscussionVote,
+} from "./discussion";
+export type {
   IntegrationCatalogItem,
   IntegrationId,
+  IntegrationManualSourceSummary,
   IntegrationItem,
   IntegrationStatus,
+  StoredIntegrationState,
 } from "./integrations";
-export type { DateRange, ModuleFilter, ReportModule, ReportRecord } from "./reports";
+export type {
+  StoredSupportRecord,
+  SupportRecordCategory,
+  SupportRecordChannel,
+  SupportRecordCsvRow,
+  SupportRecordImportRowError,
+  SupportRecordInput,
+  SupportRecordInputMethod,
+  SupportRecordPriority,
+  SupportRecordSourceSummary,
+  SupportRecordSourceType,
+  SupportRecordStatus,
+} from "./support-records";
 export type {
   InventoryAiAction,
   InventoryCategory,
@@ -63,5 +125,29 @@ export type {
   LogisticsRoute,
   LogisticsRouteStatus,
 } from "./logistics";
-export type { AuditLogStatus, SettingsAuditLogEntry, SettingsState } from "./settings";
+export type {
+  AuthRateLimitScope,
+  AuthRequestContext,
+  PasswordHashVersion,
+  PublicSession,
+  PublicUser,
+  StoredSession,
+  StoredUser,
+  StoredUserStatus,
+} from "./auth";
+export type {
+  AuditLogStatus,
+  SettingsApiResponse,
+  SettingsAuditLogEntry,
+  SettingsErrorResponse,
+  SettingsField,
+  SettingsState,
+  StoredSettingsAuditLogEntry,
+  StoredUserSettings,
+  StoredUserSettingsInput,
+  UpdateSettingsRequest,
+} from "./settings";
 export type { FeatureKey, MockPlan, MockRole, MockSession } from "./session";
+
+
+

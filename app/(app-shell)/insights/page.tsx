@@ -1,12 +1,32 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Badge, Card, EmptyState, PageHeader, Skeleton } from "@/components/ui";
-import type { InsightItem, InsightPriority, InsightsApiResponse } from "@/types";
+import { Badge, Card, EmptyState, PageHeader, Skeleton, Toast } from "@/components/ui";
+import type {
+  InsightAction,
+  InsightDecision,
+  InsightItem,
+  InsightPriority,
+  InsightsApiResponse,
+  InsightsErrorResponse,
+  SupportRecordCategory,
+  UpdateInsightRequest,
+} from "@/types";
 
 const priorityOptions = ["all", "high", "medium", "low"] as const;
 const categoryOptions = ["all", "Support", "Operations", "Automation", "Knowledge"] as const;
 const confidenceOptions = ["all", "80", "90"] as const;
+const supportCategoryOptions = ["Delivery", "Returns", "Billing", "Account"] as const;
+
+function sanitizeSupportCategory(value: string | null): SupportRecordCategory | "all" {
+  if ((supportCategoryOptions as readonly string[]).includes(value ?? "")) {
+    return value as SupportRecordCategory;
+  }
+
+  return "all";
+}
 
 function badgeVariantForPriority(priority: InsightPriority) {
   if (priority === "high") return "danger";
@@ -18,6 +38,34 @@ function badgeVariantForStatus(status: InsightItem["status"]) {
   if (status === "ready") return "success";
   if (status === "in-review") return "warning";
   return "neutral";
+}
+
+function badgeVariantForDecision(decision: InsightDecision) {
+  if (decision === "applied") return "success";
+  if (decision === "escalated") return "warning";
+  if (decision === "dismissed") return "neutral";
+  return "info";
+}
+
+function decisionLabel(decision: InsightDecision) {
+  if (decision === "applied") return "Applied";
+  if (decision === "escalated") return "Escalated";
+  if (decision === "dismissed") return "Dismissed";
+  return "Pending";
+}
+
+function actionSuccessMessage(action: InsightAction) {
+  if (action === "review") return "Insight moved into review.";
+  if (action === "apply") return "Insight marked as applied.";
+  if (action === "dismiss") return "Insight dismissed.";
+  return "Insight escalated for follow-up.";
+}
+
+function formatDecisionTime(value?: string) {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) return value;
+  return new Date(parsed).toLocaleString();
 }
 
 function SectionIcon() {
@@ -81,14 +129,25 @@ function InsightsSkeleton() {
 }
 
 export default function InsightsPage() {
+  const searchParams = useSearchParams();
+  const supportCategoryFilter = sanitizeSupportCategory(searchParams.get("supportCategory"));
   const [priorityFilter, setPriorityFilter] = useState<(typeof priorityOptions)[number]>("all");
   const [categoryFilter, setCategoryFilter] = useState<(typeof categoryOptions)[number]>("all");
   const [confidenceFilter, setConfidenceFilter] = useState<(typeof confidenceOptions)[number]>("all");
-  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [insightsData, setInsightsData] = useState<InsightsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [submittingById, setSubmittingById] = useState<Record<string, InsightAction | undefined>>({});
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [highlightedInsightId, setHighlightedInsightId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toastOpen) return;
+    const timeout = window.setTimeout(() => setToastOpen(false), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [toastOpen]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -103,11 +162,13 @@ export default function InsightsPage() {
           signal: controller.signal,
         });
 
-        if (!response.ok) {
-          throw new Error(`Insights request failed with status ${response.status}.`);
+        const payload = (await response.json()) as InsightsApiResponse | InsightsErrorResponse;
+        if (!response.ok || !("items" in payload)) {
+          const message =
+            "error" in payload ? payload.error : `Insights request failed with status ${response.status}.`;
+          throw new Error(message);
         }
 
-        const payload = (await response.json()) as InsightsApiResponse;
         setInsightsData(payload);
       } catch (fetchError) {
         if (controller.signal.aborted) return;
@@ -132,13 +193,42 @@ export default function InsightsPage() {
     const items = insightsData?.items ?? [];
 
     return items.filter((item) => {
-      if (dismissedIds.includes(item.id)) return false;
+      if (item.decision === "dismissed") return false;
       if (priorityFilter !== "all" && item.priority !== priorityFilter) return false;
       if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
       if (confidenceFilter !== "all" && item.confidence < Number(confidenceFilter) / 100) return false;
+      if (supportCategoryFilter !== "all") {
+        const scopedSupportCategory = item.supportCategory ?? "all";
+        if (scopedSupportCategory !== "all" && scopedSupportCategory !== supportCategoryFilter) return false;
+      }
       return true;
     });
-  }, [categoryFilter, confidenceFilter, dismissedIds, insightsData, priorityFilter]);
+  }, [categoryFilter, confidenceFilter, insightsData, priorityFilter, supportCategoryFilter]);
+
+  useEffect(() => {
+    const focusedInsightId = searchParams.get("focus");
+    if (!focusedInsightId) return;
+
+    const match = filteredInsights.find((item) => item.id === focusedInsightId);
+    if (!match) return;
+
+    setHighlightedInsightId(focusedInsightId);
+
+    const timeout = window.setTimeout(() => {
+      const element = document.getElementById(`insight-card-${focusedInsightId}`);
+      element?.scrollIntoView({ behavior: "smooth", block: "start" });
+      element?.focus();
+    }, 80);
+
+    const clearTimeoutId = window.setTimeout(() => {
+      setHighlightedInsightId((current) => (current === focusedInsightId ? null : current));
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearTimeout(clearTimeoutId);
+    };
+  }, [filteredInsights, searchParams]);
 
   const summaryCards = useMemo(() => {
     const activeInsights = filteredInsights.length;
@@ -178,8 +268,38 @@ export default function InsightsPage() {
     ];
   }, [filteredInsights]);
 
-  const dismissInsight = (id: string) => {
-    setDismissedIds((current) => (current.includes(id) ? current : [...current, id]));
+  const handleInsightAction = async (insightId: string, action: InsightAction) => {
+    setSubmittingById((current) => ({ ...current, [insightId]: action }));
+
+    try {
+      const payload: UpdateInsightRequest = { insightId, action };
+      const response = await fetch("/api/insights", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as InsightsApiResponse | InsightsErrorResponse;
+      if (!response.ok || !("items" in data)) {
+        const message =
+          "error" in data ? data.error : "Unable to update insight state.";
+        throw new Error(message);
+      }
+
+      setInsightsData(data);
+      setToastMessage(actionSuccessMessage(action));
+      setToastOpen(true);
+      setError(null);
+    } catch (actionError) {
+      setToastMessage(
+        actionError instanceof Error ? actionError.message : "Unable to update insight state.",
+      );
+      setToastOpen(true);
+    } finally {
+      setSubmittingById((current) => ({ ...current, [insightId]: undefined }));
+    }
   };
 
   if (!insightsData && loading) {
@@ -221,16 +341,37 @@ export default function InsightsPage() {
 
   return (
     <div className="space-y-6">
+      <Toast message={toastMessage} onClose={() => setToastOpen(false)} open={toastOpen} />
+
       <PageHeader
         title="AccessPath AI Insights"
         description="Review model-generated recommendations, prioritize operational improvements, and decide which actions to apply in the MVP demo."
-        actions={<Badge variant="info" className="px-3 py-1">Live insights feed</Badge>}
+        actions={<Badge variant="info" className="px-3 py-1">Persistent insights feed</Badge>}
       />
 
       {error ? (
         <Card className="border-amber-200 bg-amber-50 shadow-sm">
           <p className="text-sm font-medium text-amber-900">Insights refresh failed</p>
           <p className="mt-1 text-sm text-amber-800">{error}</p>
+        </Card>
+      ) : null}
+
+      {supportCategoryFilter !== "all" ? (
+        <Card className="border-sky-200 bg-sky-50/70 shadow-sm">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p className="text-sm font-medium text-sky-900">Focused on {supportCategoryFilter}-related insights</p>
+              <p className="mt-1 text-sm leading-6 text-sky-800">
+                Showing insights tagged to {supportCategoryFilter} plus cross-cutting recommendations that apply across the support queue.
+              </p>
+            </div>
+            <Link
+              className="rounded-md border border-sky-300 bg-white px-3 py-2 text-sm text-sky-800 transition hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2"
+              href="/insights"
+            >
+              Clear Focus
+            </Link>
+          </div>
         </Card>
       ) : null}
 
@@ -325,89 +466,129 @@ export default function InsightsPage() {
 
       <section className="space-y-4">
         {filteredInsights.length > 0 ? (
-          filteredInsights.map((item) => (
-            <Card key={item.id} className="border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="neutral">{item.category}</Badge>
-                    <Badge variant={badgeVariantForPriority(item.priority)}>
-                      {item.priority === "high"
-                        ? "High priority"
-                        : item.priority === "medium"
-                          ? "Medium priority"
-                          : "Low priority"}
-                    </Badge>
-                    <Badge variant={badgeVariantForStatus(item.status)}>
-                      {item.status === "ready"
-                        ? "Ready"
-                        : item.status === "in-review"
-                          ? "In review"
-                          : "New"}
-                    </Badge>
+          filteredInsights.map((item) => {
+            const isSubmitting = Boolean(submittingById[item.id]);
+            const decisionTimestamp = formatDecisionTime(item.decisionUpdatedAt);
+            const isHighlighted = highlightedInsightId === item.id;
+
+            return (
+              <Card
+                key={item.id}
+                className={`border-gray-200 bg-white p-5 shadow-sm transition ${
+                  isHighlighted ? "ring-2 ring-sky-400 ring-offset-2" : ""
+                }`}
+                id={`insight-card-${item.id}`}
+                tabIndex={-1}
+              >
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="neutral">{item.category}</Badge>
+                      <Badge variant={badgeVariantForPriority(item.priority)}>
+                        {item.priority === "high"
+                          ? "High priority"
+                          : item.priority === "medium"
+                            ? "Medium priority"
+                            : "Low priority"}
+                      </Badge>
+                      <Badge variant={badgeVariantForStatus(item.status)}>
+                        {item.status === "ready"
+                          ? "Ready"
+                          : item.status === "in-review"
+                            ? "In review"
+                            : "New"}
+                      </Badge>
+                      {item.decision !== "pending" ? (
+                        <Badge variant={badgeVariantForDecision(item.decision)}>
+                          {decisionLabel(item.decision)}
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    <h2 className="mt-4 text-lg font-semibold text-gray-900">{item.title}</h2>
+
+                    <div className="mt-4 grid grid-cols-1 gap-4 text-sm text-gray-600 xl:grid-cols-[120px_1fr]">
+                      <div className="font-medium text-gray-500">Confidence</div>
+                      <div>{(item.confidence * 100).toFixed(0)}%</div>
+
+                      <div className="font-medium text-gray-500">Recommendation</div>
+                      <div className="leading-6 text-gray-700">{item.recommendation}</div>
+
+                      <div className="font-medium text-gray-500">Why this appeared</div>
+                      <div className="leading-6 text-gray-700">{item.reason}</div>
+
+                      <div className="font-medium text-gray-500">Estimated impact</div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-gray-700">{item.estimatedTimeSaved}</span>
+                        {item.automationOpportunity ? (
+                          <Badge variant="success">Automation opportunity</Badge>
+                        ) : (
+                          <Badge variant="neutral">Manual review advised</Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <h2 className="mt-4 text-lg font-semibold text-gray-900">{item.title}</h2>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 text-sm text-gray-600 xl:grid-cols-[120px_1fr]">
-                    <div className="font-medium text-gray-500">Confidence</div>
-                    <div>{(item.confidence * 100).toFixed(0)}%</div>
-
-                    <div className="font-medium text-gray-500">Recommendation</div>
-                    <div className="leading-6 text-gray-700">{item.recommendation}</div>
-
-                    <div className="font-medium text-gray-500">Why this appeared</div>
-                    <div className="leading-6 text-gray-700">{item.reason}</div>
-
-                    <div className="font-medium text-gray-500">Estimated impact</div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-gray-700">{item.estimatedTimeSaved}</span>
-                      {item.automationOpportunity ? (
-                        <Badge variant="success">Automation opportunity</Badge>
-                      ) : (
-                        <Badge variant="neutral">Manual review advised</Badge>
-                      )}
+                  <div className="w-full xl:w-56">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                        Actions
+                      </p>
+                      {decisionTimestamp ? (
+                        <p className="mt-2 text-xs text-gray-500">Last updated {decisionTimestamp}</p>
+                      ) : null}
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSubmitting || (item.status === "in-review" && item.decision === "pending")}
+                          onClick={() => handleInsightAction(item.id, "review")}
+                          type="button"
+                        >
+                          {submittingById[item.id] === "review"
+                            ? "Saving..."
+                            : item.status === "in-review" && item.decision === "pending"
+                              ? "In review"
+                              : "Review"}
+                        </button>
+                        <button
+                          className="rounded-md border border-gray-900 bg-gray-900 px-3 py-2 text-sm text-white transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSubmitting || item.decision === "applied"}
+                          onClick={() => handleInsightAction(item.id, "apply")}
+                          type="button"
+                        >
+                          {submittingById[item.id] === "apply"
+                            ? "Saving..."
+                            : item.decision === "applied"
+                              ? "Applied"
+                              : "Apply"}
+                        </button>
+                        <button
+                          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSubmitting}
+                          onClick={() => handleInsightAction(item.id, "dismiss")}
+                          type="button"
+                        >
+                          {submittingById[item.id] === "dismiss" ? "Saving..." : "Dismiss"}
+                        </button>
+                        <button
+                          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={isSubmitting || item.decision === "escalated"}
+                          onClick={() => handleInsightAction(item.id, "escalate")}
+                          type="button"
+                        >
+                          {submittingById[item.id] === "escalate"
+                            ? "Saving..."
+                            : item.decision === "escalated"
+                              ? "Escalated"
+                              : "Escalate"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="w-full xl:w-56">
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Actions
-                    </p>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-                        type="button"
-                      >
-                        Review
-                      </button>
-                      <button
-                        className="rounded-md border border-gray-900 bg-gray-900 px-3 py-2 text-sm text-white transition hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
-                        type="button"
-                      >
-                        Apply
-                      </button>
-                      <button
-                        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-                        onClick={() => dismissInsight(item.id)}
-                        type="button"
-                      >
-                        Dismiss
-                      </button>
-                      <button
-                        className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
-                        type="button"
-                      >
-                        Escalate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))
+              </Card>
+            );
+          })
         ) : (
           <Card>
             <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 px-4 py-10 text-center">
@@ -422,3 +603,5 @@ export default function InsightsPage() {
     </div>
   );
 }
+
+

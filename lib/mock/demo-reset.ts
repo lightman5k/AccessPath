@@ -3,16 +3,13 @@
 import {
   clearCustomerServiceConversationStates,
   clearStoredIntegrations,
-  clearStoredMockSession,
   clearStoredSettings,
   clearStoredWorkflow,
   defaultStoredWorkflow,
   writeCustomerServiceConversationState,
   writeStoredIntegrations,
-  writeStoredMockSession,
   writeStoredWorkflow,
 } from "@/lib";
-import { defaultMockSession } from "@/lib/mock/session";
 import { mockWorkflowTemplate } from "@/lib/mock/workflow";
 
 export const demoDataResetEvent = "demo-data:reset";
@@ -23,8 +20,9 @@ export function resetDemoData() {
   clearStoredWorkflow();
   clearStoredIntegrations();
   clearStoredSettings();
-  clearStoredMockSession();
   clearCustomerServiceConversationStates();
+
+  window.localStorage.removeItem("mock-session:v1");
 
   writeStoredIntegrations([
       {
@@ -82,7 +80,5 @@ export function resetDemoData() {
       updatedAt: new Date().toISOString(),
     });
 
-  writeStoredMockSession(defaultMockSession);
   window.dispatchEvent(new Event(demoDataResetEvent));
-  window.dispatchEvent(new CustomEvent("mock-session:change", { detail: defaultMockSession }));
 }

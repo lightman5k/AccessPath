@@ -23,4 +23,9 @@ export const integrationCatalog: IntegrationCatalogItem[] = [
     name: "Google Drive",
     description: "Archive reports and workflow exports to shared folders.",
   },
+  {
+    id: "manual-entry",
+    name: "Manual Data Source",
+    description: "Enter support metrics manually when you do not have a live system connected.",
+  },
 ];

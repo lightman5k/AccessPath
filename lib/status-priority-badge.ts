@@ -5,7 +5,6 @@ import type {
   InventoryStatus,
   LogisticsRouteStatus,
   QueuePriority,
-  ReportModule,
 } from "@/types";
 
 type BadgeMeta = {
@@ -43,12 +42,6 @@ const logisticsStatusMeta: Record<LogisticsRouteStatus, BadgeMeta> = {
   "On Time": { variant: "success", label: "On Time" },
   "At Risk": { variant: "warning", label: "At Risk" },
   Delayed: { variant: "danger", label: "Delayed" },
-};
-
-const reportModuleMeta: Record<ReportModule, BadgeMeta> = {
-  "Workflow Builder": { variant: "info", label: "Workflow Builder" },
-  "Customer Service": { variant: "warning", label: "Customer Service" },
-  Integrations: { variant: "success", label: "Integrations" },
 };
 
 const auditStatusMeta: Record<"Success" | "Warning" | "Failed", BadgeMeta> = {
@@ -89,10 +82,6 @@ export function badgeMetaForLogisticsStatus(
   status: LogisticsRouteStatus,
 ): BadgeMeta {
   return logisticsStatusMeta[status];
-}
-
-export function badgeMetaForReportModule(module: ReportModule): BadgeMeta {
-  return reportModuleMeta[module];
 }
 
 export function badgeMetaForAuditStatus(
