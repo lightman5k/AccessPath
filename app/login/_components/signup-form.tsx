@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import type { AuthErrorResponse, AuthSessionResponse } from "@/types";
 import { FieldIcon } from "./auth-shell";
@@ -15,7 +14,6 @@ type SignupFieldErrors = Partial<{
 }>;
 
 export function SignupForm() {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -59,7 +57,7 @@ export function SignupForm() {
         return;
       }
 
-      router.replace("/dashboard");
+      window.location.assign("/dashboard");
     } catch {
       setErrorMessage("Unable to create your account right now. Please try again.");
       setFieldErrors({});

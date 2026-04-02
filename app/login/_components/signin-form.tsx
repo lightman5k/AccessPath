@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import type { AuthErrorResponse, AuthSessionResponse } from "@/types";
 import { FieldIcon } from "./auth-shell";
 
 export function SigninForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -46,7 +44,7 @@ export function SigninForm() {
         return;
       }
 
-      router.replace("/dashboard");
+      window.location.assign("/dashboard");
     } catch {
       setErrorMessage("Unable to sign in right now. Please try again.");
     } finally {
